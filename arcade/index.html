@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>wychess arcade: pick board size</title>
+  <link rel="shortcut icon" href="img/wychess_arcade_square_icon.png" type="image/x-icon" />
+
+  <link rel="stylesheet" href="css/FlexStyle.css">
+  <script src="css/FlexWyCss.js"></script>
+
+  <script src="js/wasm/FlexEngine.js"></script>
+
+  <script src="js/deps/HTML.js"></script>
+  <script src="js/deps/SVG.js"></script>
+  <script src="js/deps/JavaScript.js"></script>
+
+  <script src="js/flex/FlexMenu.js"></script>
+  <script src="js/flex/FlexBoard.js"></script>
+
+  <script>
+    let flexMenu = null
+
+    function doBootstrap(X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y) {
+      let flexDom = document.getElementById("flex")
+      flexMenu = new FlexMenu(flexDom, X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y, {
+        marginPercent: 15
+      })
+    }
+
+    function bootstrap() {
+       const X = window.localStorage.getItem('X') || 6
+       const Y = window.localStorage.getItem('Y') || 6
+       doBootstrap(X, Y, 3, 5, 8, 8)
+    }
+  </script>
+</head>
+
+<body onload="bootstrap();">
+  <div id="flex" style="position: absolute; width: 100%; height: 100%;"></div>
+</body>
+</html>

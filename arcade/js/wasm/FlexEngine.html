@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+<script src="com-wychess-engine-flex.js"></script>
+<script src="FlexEngine.js"></script>
+<script>
+  function bootstrapWithFlex() {
+    console.log('Usage:')
+    console.log('  FlexJs.get_move_hints(6, 6, "qbpkrn/pbpnpp/6/6/NPQPPB/PQQKPQ w - - 0 1")')
+    console.log('  FlexJs.get_bestmove(6, 6, "qbpkrn/pbpnpp/6/6/NPQPPB/PQQKPQ w - - 0 1")')
+  }
+
+  function bootstrap() {
+    OnFlexJsLoaded(bootstrapWithFlex()
+  }
+</script>
+</head>
+<body onload="bootstrap();">
+</body>
+</html>

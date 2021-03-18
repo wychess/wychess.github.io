@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>wychess arcade</title>
+  <link rel="shortcut icon" href="img/wychess_arcade_square_icon.png" type="image/x-icon" />
+
+  <link rel="stylesheet" href="css/FlexStyle.css">
+  <script src="css/FlexWyCss.js"></script>
+
+  <script src="js/wasm/com-wychess-engine-flex.js"></script>
+  <script src="js/wasm/FlexEngine.js"></script>
+
+  <script src="js/deps/HTML.js"></script>
+  <script src="js/deps/SVG.js"></script>
+  <script src="js/deps/JavaScript.js"></script>
+
+  <script src="js/flex/FlexApp.js"></script>
+  <script src="js/flex/FlexGen.js"></script>
+  <script src="js/flex/FlexBoard.js"></script>
+
+  <script>
+    let flexApp = null
+
+    function getIntFromUrl(def, ind) {
+      try {
+        return parseInt(unescape(location.search).split('?')[1].split('')[ind]) || def
+      } catch(e) {
+        return def
+      }
+    }
+
+    function addExtraAction(label, action) {
+      let elem = $$$(button({style: 'margin: 10px;'}), label)
+      elem.addEventListener('click', action)
+      elem.setAttribute('class', 'grow')
+      document.getElementById('extra').appendChild(elem)
+    }
+
+    function reset(X, Y) {
+        document.body.style.backgroundColor = WHITE
+        let flexDom = document.getElementById("flex")
+        flexDom.innerHTML = ''
+        flexApp = new FlexApp(flexDom, X, Y, {
+          marginPercent: 15,
+        })
+    }
+
+    function doBootstrap(X, Y) {
+      OnFlexJsLoaded(function() {
+        document.title = 'wychess arcade ' + X + 'x' + Y
+        reset(X, Y)
+        addExtraAction('pick size', function() { document.location = 'https://wychess.github.io/arcade/index.html' })
+        addExtraAction('reset', function() { reset(X, Y) })
+      })
+    }
+
+    function bootstrap() {
+      let X = Math.max(3, Math.min(8, getIntFromUrl(6, 2))) // 2: "X=_&Y=8"
+      let Y = Math.max(3, Math.min(8, getIntFromUrl(6, 6))) // 6: "X=8&Y=_"
+      doBootstrap(X, Y)
+    }
+  </script>
+</head>
+
+<body onload="bootstrap();">
+<div id="flex" style="position: absolute; width: 100%; height: 100%;"></div>
+<div id="extra" style="position: fixed; left: 0; bottom: 0;"></div>
+</body>
+</html>
