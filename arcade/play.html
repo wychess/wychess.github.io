@@ -16,11 +16,13 @@
   <script src="js/deps/JavaScript.js"></script>
 
   <script src="js/flex/FlexApp.js"></script>
-  <script src="js/flex/FlexGen.js"></script>
   <script src="js/flex/FlexBoard.js"></script>
+  <script src="js/flex/FlexGen.js"></script>
+  <script src="js/flex/FlexGest.js"></script>
 
   <script>
     let flexApp = null
+    let flexGest = null
 
     function getIntFromUrl(def, ind) {
       try {
@@ -37,34 +39,77 @@
       document.getElementById('extra').appendChild(elem)
     }
 
-    function reset(X, Y) {
-        document.body.style.backgroundColor = WHITE
-        let flexDom = document.getElementById("flex")
-        flexDom.innerHTML = ''
-        flexApp = new FlexApp(flexDom, X, Y, {
-          marginPercent: 15,
-        })
+    function resetBoard(X, Y, history) {
+      let wrapDom = document.getElementById("wrap")
+      let flexDom = document.getElementById("flex")
+      flexDom.innerHTML = ''
+      flexApp = new FlexApp(wrapDom, flexDom, X, Y, history, {
+        marginPercent: 15,
+      })
+
+      flexGest = new FlexGest(wrapDom, flexApp.flexBoard.chessLayer.layerDom, {
+
+        tapAndHoldMarker: function() {
+          if (flexApp.canTakeBack()) {
+            flexApp.flexBoard.showLoader()
+          }
+        },
+
+        tapAndHoldCancel: function() {
+          flexApp.flexBoard.hideLoader()
+        },
+
+        tapAndHoldCommit: function() {
+          flexApp.takeBack()
+          flexApp.flexBoard.hideLoader()
+        },
+
+        slideAccept: function() {
+          flexApp.markEnd()
+        },
+
+        slideReject: function() {
+          resetBoard(X, Y, "")
+        },
+
+        doubleTap: function() {
+          if (flexApp.canResetFlag) {
+            resetBoard(X, Y, "")
+          }
+        }
+      })
     }
 
-    function doBootstrap(X, Y) {
+    function doBootstrap(X, Y, history) {
       OnFlexJsLoaded(function() {
         document.title = 'wychess arcade ' + X + 'x' + Y
-        reset(X, Y)
-        addExtraAction('pick size', function() { document.location = 'https://wychess.github.io/arcade/index.html' })
-        addExtraAction('reset', function() { reset(X, Y) })
+        resetBoard(X, Y, history)
+        addExtraAction('pick size', function() {
+          window.localStorage.setItem(X + 'x' + Y, "")
+          document.location = flex_host + '/index.html'
+        })
+        addExtraAction('reset', function() {
+          window.localStorage.setItem(X + 'x' + Y, "")
+          resetBoard(X, Y, "")
+        })
+        addExtraAction('take back', function() {
+          flexApp.takeBack()
+        })
       })
     }
 
     function bootstrap() {
-      let X = Math.max(3, Math.min(8, getIntFromUrl(6, 2))) // 2: "X=_&Y=8"
-      let Y = Math.max(3, Math.min(8, getIntFromUrl(6, 6))) // 6: "X=8&Y=_"
-      doBootstrap(X, Y)
+      const X = Math.max(3, Math.min(8, getIntFromUrl(6, 2))) // 2: "X=_&Y=8"
+      const Y = Math.max(3, Math.min(8, getIntFromUrl(6, 6))) // 6: "X=8&Y=_"
+      const history = window.localStorage.getItem(X + 'x' + Y) || ""
+      doBootstrap(X, Y, history)
     }
   </script>
 </head>
 
 <body onload="bootstrap();">
-<div id="flex" style="position: absolute; width: 100%; height: 100%;"></div>
-<div id="extra" style="position: fixed; left: 0; bottom: 0;"></div>
+  <div id="wrap" style="position: absolute; width: 100%; height: 100%; opacity: 0; z-index: 1;"></div>
+  <div id="flex" style="position: absolute; width: 100%; height: 100%;"></div>
+  <div id="extra" style="position: fixed; left: 0; bottom: 0; z-index: 2;"></div>
 </body>
 </html>

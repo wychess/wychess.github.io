@@ -27,13 +27,19 @@ function bind_bestmove(x, y) {
 }
 
 class FlexApp {
-    constructor(flexDom, X, Y, config) {
+    constructor(wrapDom, flexDom, X, Y, history, config) {
         const defaultConfig = {
             onPositionRegistered: this.onPositionRegistered.bind(this),
             onHumanMoveRegistered: this.onHumanMoveRegistered.bind(this),
             onEngineMoveRegistered: this.onEngineMoveRegistered.bind(this)
         }
         this.config = {...defaultConfig, ...config}
+
+        this.X = X
+        this.Y = Y
+
+        this.wrapDom = wrapDom
+        this.markPlay()
         this.flexBoard = new FlexBoard(flexDom, X, Y, this.config)
 
         let that = this
@@ -48,8 +54,16 @@ class FlexApp {
             that.onUCIMessage(message)
         }, bind_bestmove(X, Y))
 
-        const fen = FlexGen(X, Y)
-        this.flexBoard.fen(fen)
+        this.canResetFlag = history == ""
+        if (history == "") {
+            const fen = FlexGen(X, Y)
+            this.flexBoard.fen(fen)
+            this.history = []
+            this.history.push(fen)
+        } else {
+            this.history = history.split(';')
+            this.flexBoard.fen(this.history[this.history.length - 1])
+        }
 
 //        console.log("INIT " + this.flexBoard.dump())
 
@@ -58,13 +72,20 @@ class FlexApp {
     }
 
     markWin() {
+        this.canResetFlag = true
         this.flexBoard.hideLoader()
         document.body.style.backgroundColor = ACCENT
     }
 
     markEnd() {
+        this.canResetFlag = true
+        this.flexBoard.allowMoves({})
         this.flexBoard.hideLoader()
         document.body.style.backgroundColor = FRAME
+    }
+
+    markPlay() {
+        document.body.style.backgroundColor = WHITE
     }
 
     insufficientMaterial(fen) {
@@ -110,6 +131,7 @@ class FlexApp {
     }
 
     onHumanMoveRegistered(fen0, fen1, key0, key1) {
+        this.canResetFlag = false
         this.flexBoard.allowMoves({})
         this.flexBoard.dropLayer.clear()
         this.flexBoard.hintLayer.clear()
@@ -128,6 +150,7 @@ class FlexApp {
     }
 
     onEngineMoveRegistered(fen0, fen1, key0, key1) {
+        this.canResetFlag = false
         this.flexBoard.hideLoader()
         const targetPieceSymbol = LOOKUP(fen0, key1)
         if (targetPieceSymbol !== '.') {
@@ -137,6 +160,8 @@ class FlexApp {
             this.markEnd()
             return
         }
+        this.history.push(fen1)
+        FlexJs.set_history(this.X, this.Y, this.history.join(';'))
         //if (this.flexBoard.premove != null) {
         //    const preKey0 = this.flexBoard.premove[0]
         //    const preKey1 = this.flexBoard.premove[1]
@@ -189,6 +214,23 @@ class FlexApp {
         } else if (m[0] === 'RESIGN') {
             this.markWin()
         }
+    }
 
+    canTakeBack() {
+        return this.history.length > 1
+    }
+
+    takeBack() {
+        if (!this.canTakeBack()) {
+            return
+        }
+        this.markPlay()
+        this.history.pop()
+        const fen = this.history[this.history.length - 1]
+        this.flexBoard.fen(fen)
+        if (!this.canTakeBack()) {
+            this.canResetFlag = true
+        }
+        FlexJs.set_history(this.X, this.Y, this.history.join(';'))
     }
 }

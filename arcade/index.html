@@ -23,6 +23,7 @@
     function doBootstrap(X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y) {
       let flexDom = document.getElementById("flex")
       flexMenu = new FlexMenu(flexDom, X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y, {
+        touchMenu: false,
         marginPercent: 15
       })
     }

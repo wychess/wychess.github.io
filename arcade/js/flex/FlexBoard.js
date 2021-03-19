@@ -238,6 +238,7 @@ class MoveLayer {
 class ChessLayer {
     constructor(flexBoard, dom, X, Y, zIndex) {
         this.flexBoard = flexBoard
+        this.outerDom = dom
 
         this.X = X
         this.Y = Y
@@ -254,8 +255,15 @@ class ChessLayer {
         this.sourceKey = null
         this.fingerOverKey = null
 
-        this.createDom(zIndex)
-        dom.appendChild(this.layerDom)
+        this.createDom(this.zIndex)
+        this.outerDom.appendChild(this.layerDom)
+    }
+
+    reset() {
+        this.layerDom.parentNode.removeChild(this.layerDom)
+        this.createDom(this.zIndex)
+        this.outerDom.appendChild(this.layerDom)
+        this.doOnResize()
     }
 
     registerMouseEvent(mouseEvent) {
@@ -458,6 +466,7 @@ class ChessLayer {
     getOnTouchDown(key) {
         const onTouchDown = function(touchEvent) {
             touchEvent.preventDefault()
+            window.ontouchend = this.onTouchUp.bind(this)
             if (this.sourceKey != null) {
                 if (this.sourceKey == key) {
                     // toggle selected source square
@@ -484,7 +493,7 @@ class ChessLayer {
     }
 
     onTouchMove(touchEvent) {
-        touchEvent.preventDefault()
+        //touchEvent.preventDefault()
         const shift = this.calculateTouchShift(touchEvent)
         let pieceImage = this.pieceImages[this.sourceKey]
         this.shiftDraggedPiece(pieceImage, shift)
@@ -495,6 +504,7 @@ class ChessLayer {
     onTouchUp(touchEvent) {
         touchEvent.preventDefault()
         window.ontouchmove = null
+        window.ontouchend = null
         if (this.sourceKey == null) {
             return
         } else {
@@ -525,14 +535,22 @@ class ChessLayer {
 
             squareWrap.addEventListener('touchstart', that.getOnTouchDown(key))
         })
-        document.ontouchend = this.onTouchUp.bind(this)
     }
 
     onResize(width, height, left, top, squareSize) {
+        this.width = width
+        this.height = height
+        this.left = left
+        this.top = top
         this.squareSize = squareSize
-        restyle(this.layerDom, width, height, left, top)
+        this.doOnResize()
+    }
+
+    doOnResize() {
+        restyle(this.layerDom, this.width, this.height, this.left, this.top)
         let that = this
         forEachSquare(this.X, this.Y, function (x, y, key) {
+            let squareSize = that.squareSize
             restyle(that.squareWraps[key], squareSize, squareSize, (x * squareSize), ((that.Y - y - 1) * squareSize))
         })
     }
@@ -573,12 +591,12 @@ class ChessLayer {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MenuLayer {
-    constructor(flexBoard, dom, X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y, zIndex, changeResolution, startActivityIntent) {
+    constructor(flexBoard, dom, X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y, zIndex, changeResolution, startActivityIntent, touchMenu) {
         this.flexBoard = flexBoard
 
         this.X = X
         this.Y = Y
-        this.markedKey = KEY(this.X - 1, this.Y - 1)
+        this.selectedKey = KEY(this.X - 1, this.Y - 1)
 
         this.MIN_X = MIN_X
         this.MIN_Y = MIN_Y
@@ -588,6 +606,7 @@ class MenuLayer {
 
         this.zIndex = zIndex
 
+        this.touchMenu = touchMenu
         this.changeResolution = changeResolution
         this.startActivityIntent = startActivityIntent
 
@@ -598,53 +617,48 @@ class MenuLayer {
         this.createDom(zIndex)
         dom.appendChild(this.layerDom)
         dom.appendChild(this.frameDom)
+
+        this.onSquareOver(X - 1, Y - 1, this.selectedKey)
     }
 
-    reframe(x, y) {
+    reframe() {
         this.frameDom.style.left = (this.left - this.frameThickness) + 'px'
         this.frameDom.style.top = (this.top + (this.MAX_Y - this.Y) * this.squareSize - this.frameThickness) + 'px'
         this.frameDom.style.width = (this.X * this.squareSize + 2 * this.frameThickness) + 'px'
         this.frameDom.style.height = (this.Y * this.squareSize + 2 * this.frameThickness) + 'px'
 
-        let that = this
-        that.flexBoard.moveLayer.clear(x, y)
-        forEachSquare(this.MAX_X, this.MAX_Y, function (xx, yy, key) {
-            if (that.isValid(xx + 1, yy + 1)) {
-                that.dots[key] = that.flexBoard.moveLayer.doMenuDot(xx, yy)
-            }
-        })
+        this.flexBoard.dropLayer.clear()
+        this.flexBoard.dropLayer.show(this.selectedKey, ACCENT)
     }
 
     isValid(x, y) {
         return ((x >= this.MIN_X) && (y >= this.MIN_Y) && (x <= this.MAX_X) && (y <= this.MAX_Y))
     }
 
-    onSquareClick(key) {
-        const x = FILE_INDEX(key) + 1
-        const y = RANK_INDEX(key) + 1
-        if (!this.isValid(x, y)) {
-            return
+    onSquareTouch(x, y, key) {
+        if (key != this.selectedKey) {
+            this.onSquareOver(x, y, key)
+            this.changeResolution(this.X, this.Y)
+        } else {
+            this.onSquareClick(x, y, key)
         }
-        this.changeResolution(x, y)
+    }
+
+    onSquareClick(x, y, key) {
+        this.X = x + 1
+        this.Y = y + 1
+        this.changeResolution(this.X, this.Y)
         this.startActivityIntent(this.X, this.Y)
     }
 
-    onSquareOver(key) {
-            const x = FILE_INDEX(key) + 1
-            const y = RANK_INDEX(key) + 1
-            if (!this.isValid(x, y)) {
-                return
-            }
-            this.X = x
-            this.Y = y
-            this.reframe(this.X, this.Y)
-            this.dots[this.markedKey].setAttribute('fill', ACCENT)
-            this.markedKey = key
-            this.dots[this.markedKey].setAttribute('fill', FRAME)
-            this.flexBoard.dropLayer.clear()
-            this.flexBoard.dropLayer.show(key, ACCENT)
+    onSquareOver(x, y, key) {
+        this.X = x + 1
+        this.Y = y + 1
+        this.dots[this.selectedKey].setAttribute('fill', ACCENT)
+        this.selectedKey = key
+        this.dots[this.selectedKey].setAttribute('fill', FRAME)
+        this.reframe()
     }
-
 
     createDom(zIndex) {
         this.layerDom = div({style: "position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: " + zIndex})
@@ -655,14 +669,24 @@ class MenuLayer {
             squareWrap.style.zIndex = zIndex
             that.layerDom.appendChild(squareWrap)
             that.squareWraps[key] = squareWrap
-            squareWrap.addEventListener('click', function () {
-                that.onSquareClick(key)
-            })
-            squareWrap.addEventListener('mouseover', function () {
-                if (that.dots.hasOwnProperty(key)) {
-                  that.onSquareOver(key)
-                }
-            })
+            if (!that.isValid(x+1, y+1)) {
+                return
+            }
+            that.dots[key] = that.flexBoard.moveLayer.doMenuDot(x, y)
+            if (that.touchMenu) {
+                squareWrap.addEventListener('touchstart', function () {
+                    that.onSquareTouch(x, y, key)
+                })
+            } else {
+                squareWrap.addEventListener('click', function () {
+                    that.onSquareClick(x, y, key)
+                })
+                squareWrap.addEventListener('mouseover', function () {
+                    if (that.dots.hasOwnProperty(key)) {
+                      that.onSquareOver(x, y, key)
+                    }
+                })
+            }
         })
         this.frameDom = div({style: "position: absolute; pointer-events: none; bottom: 0; left: 0; z-index: " + (2 * zIndex)})
         this.frameDom.style.border = '3px solid ' + FRAME
@@ -678,7 +702,7 @@ class MenuLayer {
         this.top = top
         this.squareSize = squareSize
         this.frameThickness = frameThickness
-        this.reframe(this.X, this.Y)
+        this.reframe()
     }
 }
 
@@ -815,7 +839,7 @@ class FlexBoard {
             this.chessLayer = new ChessLayer(this, this.innerDom, X, Y, 500)
             this.innerDom.appendChild(this.chessLayer.layerDom)
         } else {
-            this.menuLayer = new MenuLayer(this, this.innerDom, config.defaultX, config.defaultY, config.minX, config.minY, this.X, this.Y, 500, config.changeResolution, config.startActivityIntent)
+            this.menuLayer = new MenuLayer(this, this.innerDom, config.defaultX, config.defaultY, config.minX, config.minY, this.X, this.Y, 500, config.changeResolution, config.startActivityIntent, config.touchMenu)
             this.innerDom.appendChild(this.menuLayer.layerDom)
             this.innerDom.appendChild(this.menuLayer.frameDom)
         }
@@ -904,7 +928,10 @@ class FlexBoard {
     }
 
     createLoaderDom() {
-        return img({src: 'img/loader.gif', style: "position: absolute; visibility: hidden;"})
+        return $$(div({style: 'position: absolute; visibility: hidden;'}),
+          img({src: 'img/loader.png', style: "position: absolute; width: 100%; height: 100%;"}),
+          img({src: 'img/loader.gif', style: "position: absolute; width: 66%; height: 66%; left: 17%; top: 17%;"}),
+        )
     }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -953,7 +980,7 @@ class FlexBoard {
         const outerRatio = innerHeight / innerWidth
         const boardRatio = this.Y / this.X
 
-        const MAX_LOADER_SIZE = 100
+        const MAX_LOADER_SIZE = 200
 
         if (outerRatio > boardRatio) {
             this.squareSize = Math.floor(innerWidth / this.X)
@@ -1062,6 +1089,9 @@ class FlexBoard {
         if (boardArray.length != this.X * this.Y) {
             throw "Corrupted FEN"
         }
+
+        this.chessLayer.reset()
+        this.pieces = {}
 
         let that = this
         this.forEachSquare(function (x, y, key) {
