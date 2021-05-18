@@ -94,12 +94,11 @@
 
     function doBootstrap(X, Y) {
       OnFlexEngineJsLoaded(function() {
-        console.log(FlexEngineJs.getBoardAfter(8, 8, "AUTO", "6k1/5ppp/4p3/3bP3/5Q2/r3B2P/1q4P1/5RK1 b - - 6 28#a3e3"))
         document.title = 'wychess arcade ' + X + 'x' + Y
         const history = window.localStorage.getItem(X + 'x' + Y) || FlexEngineJs.getBoard(X, Y, "", "")
         resetBoard(X, Y, history)
         addExtraAction('pick size', function() {
-          document.location = flex_host + '/test_pick.html'
+          document.location = flex_host + '/index.html'
         })
         addExtraAction('reset', function() {
           const history = FlexEngineJs.getBoard(X, Y, "", "")
