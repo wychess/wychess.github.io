@@ -1,8 +1,7 @@
-const FlexGen = function() {
-    const random = function(array) {
-        return array[Math.floor((Math.random()*array.length))]
-    }
+// This file is a part of wychess project.
+// Copyright (c) 2021 wychess.com <wychess@wychess.com>.
 
+const FlexGen = function() {
     const reroll_side = function(pts, X) {
         const N = 2 * X - 1
         const INIT_SIDE = ('p'.repeat(N) + 'k').split('')
@@ -14,7 +13,7 @@ const FlexGen = function() {
             let index =  Math.floor((Math.random() * N))
             let old = side[index]
             if (old != 'q') {
-                let up = random(UPGRADE)
+                let up = SAMPLE_FROM(UPGRADE)
                 if (PIECE_EVAL[old] < PIECE_EVAL[up]) {
                     rem -= PIECE_EVAL[up] - PIECE_EVAL[old]
                     side[index] = up
@@ -24,7 +23,7 @@ const FlexGen = function() {
         return side
     }
 
-    const build_pos_fen = function(whites, blacks, X, Y){
+    const buildFenBase = function(whites, blacks, X, Y){
         const N = 2 * X - 1
         const C = Math.floor(X / 2)
 
@@ -53,10 +52,10 @@ const FlexGen = function() {
         return rank.reduce((xfen, piece, index) => (xfen + ((piece == 'r') ? alphabet[index] : '')), '')
     }*/
 
-    const build_fen = function(whites, blacks, X, Y) {
-        const min_fen = build_pos_fen(whites, blacks, X, Y)
-        const ext_fen = 'w KQkq - 0 1'
-        return min_fen + ' ' + ext_fen
+    const buildFen = function(whites, blacks, X, Y) {
+        const fenBase = buildFenBase(whites, blacks, X, Y)
+        const fenAppendDefault = " w - - 0 1"
+        return fenBase + fenAppendDefault
     }
 
     return function(X, Y) {
@@ -66,7 +65,7 @@ const FlexGen = function() {
         const whites = reroll_side(W_PTS, X)
         const blacks = reroll_side(B_PTS, X)
 
-        return build_pos_fen(whites, blacks, X, Y)
+        return buildFen(whites, blacks, X, Y)
     }
 }();
 

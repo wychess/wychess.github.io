@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>wychess arcade: pick board size</title>
-  <link rel="shortcut icon" href="img/wychess_arcade_square_icon.png" type="image/x-icon" />
+  <link rel="shortcut icon" href="img/wychess_arcade_square.png" type="image/x-icon" />
 
   <link rel="stylesheet" href="css/FlexStyle.css">
   <script src="css/FlexWyCss.js"></script>
@@ -14,11 +14,26 @@
   <script src="js/deps/SVG.js"></script>
   <script src="js/deps/JavaScript.js"></script>
 
-  <script src="js/flex/FlexMenu.js"></script>
-  <script src="js/flex/FlexBoard.js"></script>
+  <script src="js/core/FlexTouch.js"></script>
+  <script src="js/core/FlexBoard.js"></script>
+  <script src="js/core/FlexHelp.js"></script>
+
+  <script src="js/app/arcade/FlexMenu.js"></script>
 
   <script>
     let flexMenu = null
+
+    const flex_host = 'https://wychess.github.io/arcade'
+
+    const ActivityJs = {
+      startActivityIntent: function(x, y) {
+        document.location = flex_host + '/play.html?X=' + x + '&Y=' + y
+      },
+      changeResolution: function(x, y) {
+        localStorage.setItem('X', x)
+        localStorage.setItem('Y', y)
+      }
+    }
 
     function doBootstrap(X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y) {
       let flexDom = document.getElementById("flex")

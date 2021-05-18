@@ -1,5 +1,5 @@
-// This file is a part of quicksave project.
-// Copyright (c) 2017 Aleksander Gajewski <adiog@quicksave.io>.
+// This file is a part of wychess project.
+// Copyright (c) 2021 wychess.com <wychess@wychess.com>.
 
 function text(innerText) {
     return document.createTextNode(innerText)

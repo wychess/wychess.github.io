@@ -6,12 +6,13 @@ class FlexMenu {
             'minX': MIN_X,
             'minY': MIN_Y,
             'startActivityIntent': function(x, y) {
-                return SizeJs.startActivityIntent(x, y)
+                return ActivityJs.startActivityIntent(x, y)
             },
             'changeResolution': function(x, y) {
-                SizeJs.changeResolution(x, y)
+                ActivityJs.changeResolution(x, y)
             },
-            'marginPercent': 3
+            'touchMenu': true,
+            'marginPercent': 7
         }
         this.config = {...defaultConfig, ...config}
 

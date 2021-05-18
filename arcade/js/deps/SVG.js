@@ -1,5 +1,5 @@
-// This file is a part of quicksave project.
-// Copyright (c) 2017 Aleksander Gajewski <adiog@quicksave.io>.
+// This file is a part of wychess project.
+// Copyright (c) 2021 wychess.com <wychess@wychess.com>.
 
 function $SVG(elementName, elementAttributes={}) {
     let dom = document.createElementNS("http://www.w3.org/2000/svg", elementName)
@@ -49,10 +49,11 @@ function circle(x, y, color, r) {
 }
 
 function path(pts, color, size) {
-    return $SVG('path', {'d': 'M' + pts.join(' '),
-          'stroke-width': size,
-      'stroke-linejoin': "round",
-      'stroke': color,
-      'fill': color
+    return $SVG('path', {
+        'd': 'M' + pts.join(' '),
+        'stroke-width': size,
+        'stroke-linejoin': "round",
+        'stroke': color,
+        'fill': color
     })
 }

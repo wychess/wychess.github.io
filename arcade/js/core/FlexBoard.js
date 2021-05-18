@@ -1,69 +1,3 @@
-const ALPHABET = 'abcdefghijklmnop'.split('')
-
-function KEY(x, y) {
-    return ALPHABET[x] + Math.floor(y + 1).toString()
-}
-
-function FILE(key) {
-    return key.split('')[0]
-}
-
-function RANK(key) {
-    return parseInt(key.split('')[1])
-}
-
-function FILE_INDEX(key) {
-    return ALPHABET.indexOf(FILE(key))
-}
-
-function RANK_INDEX(key) {
-    return RANK(key) - 1
-}
-
-function KEY_INDEX(key, X, Y) {
-    return FILE_INDEX(key) + (Y - 1 - RANK_INDEX(key)) * X
-}
-
-function simplifyFen(fen) {
-    return fen.split(' ')[0]
-        .replace(/16/g, '................')
-        .replace(/15/g, '...............')
-        .replace(/14/g, '..............')
-        .replace(/13/g, '.............')
-        .replace(/12/g, '............')
-        .replace(/11/g, '...........')
-        .replace(/10/g, '..........')
-        .replace(/9/g, '.........')
-        .replace(/8/g, '........')
-        .replace(/7/g, '.......')
-        .replace(/6/g, '......')
-        .replace(/5/g, '.....')
-        .replace(/4/g, '....')
-        .replace(/3/g, '...')
-        .replace(/2/g, '..')
-        .replace(/1/g, '.')
-}
-
-function flattenFen(fen) {
-    return simplifyFen(fen).replace(/\//g, '')
-}
-
-function LOOKUP(fen, key) {
-    const simpleFen = simplifyFen(fen)
-    const tempFen = simpleFen.split('/')
-    const Y = tempFen.length
-    const X = tempFen[0].length
-    return simpleFen.replace(/\//g, '').split('')[KEY_INDEX(key, X, Y)]
-}
-
-function forEachSquare(X, Y, onSquare) {
-    for (let x = 0; x < X; x++) {
-        for (let y = 0; y < Y; y++) {
-            onSquare(x, y, KEY(x, y))
-        }
-    }
-}
-
 function restyle(dom, width, height, left, top) {
     dom.style.width = width + 'px'
     dom.style.height = height + 'px'
@@ -88,7 +22,7 @@ class GenericLayer {
         this.layerDom = div({style: "pointer-events: none; z-index: " + zIndex})
         this.layerDom.style.position = 'absolute'
         let that = this
-        forEachSquare(this.X, this.Y, function (x, y, key) {
+        FOR_EACH_KEY(this.X, this.Y, function (xz, yz, key) {
             let squareDom = div()
             squareDom.style.position = 'absolute'
             squareDom.style.visibility = 'hidden'
@@ -101,8 +35,8 @@ class GenericLayer {
     onResize(width, height, left, top, squareSize) {
         restyle(this.layerDom, width, height, left, top)
         let that = this
-        forEachSquare(this.X, this.Y, function (x, y, key) {
-            restyle(that.squares[key], squareSize, squareSize, (x * squareSize), ((that.Y - y - 1) * squareSize))
+        FOR_EACH_KEY(this.X, this.Y, function (xz, yz, key) {
+            restyle(that.squares[key], squareSize, squareSize, (xz * squareSize), ((that.Y - yz - 1) * squareSize))
         })
     }
 
@@ -117,6 +51,11 @@ class GenericLayer {
         this.squares[key].style.backgroundColor = color
         this.squares[key].style.visibility = 'visible'
         this.mark.push(key)
+    }
+
+    highlight(keys, color) {
+        this.clear()
+        keys.forEach(key => this.show(key, color))
     }
 }
 
@@ -147,39 +86,33 @@ class MoveLayer {
         restyle(this.layerDom, width, height, left, top)
     }
 
-    doDot(x, y, color) {
-        const sx = 100 * (x + 0.5)
-        const sy = 100 * (this.Y - y - 0.5)
-        this.layerDom.appendChild(circle(sx, sy, ACCENT, 20))
+    doBorderDot(xz, yz, outerColor, innerColor) {
+        const sx = 100 * (xz + 0.5)
+        const sy = 100 * (this.Y - yz - 0.5)
+        let outer = circle(sx, sy, outerColor, 20)
+        let inner = circle(sx, sy, innerColor, 18)
+        this.layerDom.appendChild(outer)
+        this.layerDom.appendChild(inner)
+        return inner
+    }
+
+    doDot(xz, yz, color) {
+        const sx = 100 * (xz + 0.5)
+        const sy = 100 * (this.Y - yz - 0.5)
+        this.layerDom.appendChild(circle(sx, sy, color, 20))
     }
 
     doDotKey(key, color) {
-        this.doDot(ALPHABET.indexOf(key.split('')[0]), parseInt(key.split('')[1]) - 1, color)
+        this.doBorderDot(ALPHABET.indexOf(key.split('')[0]), parseInt(key.split('')[1]) - 1, DOT_HINT_OUTER, color)
     }
 
-    doMenuDot(x, y) {
-        const sx = 100 * (x + 0.5)
-        const sy = 100 * (this.Y - y - 0.5)
-        let outer = circle(sx, sy, FRAME, 20)
-        let inner = circle(sx, sy, ACCENT, 18)
-        this.layerDom.appendChild(outer)
-        this.layerDom.appendChild(inner)
-        return inner
+    doMenuDot(xz, yz) {
+        return this.doBorderDot(xz, yz, DOT_MENU_OUTER, DOT_MENU_INNER_NORM)
     }
 
-    doPickDot(x, y) {
-        const sx = 100 * (x + 0.5)
-        const sy = 100 * (this.Y - y - 0.5)
-        let outer = circle(sx, sy, FRAME, 20)
-        let inner = circle(sx, sy, FRAME, 18)
-        this.layerDom.appendChild(outer)
-        this.layerDom.appendChild(inner)
-        return inner
-    }
-
-    doCap(x, y, color) {
-        const sx = 100 * (x + 0.5)
-        const sy = 100 * (this.Y - y - 0.5)
+    doCap(xz, yz, color) {
+        const sx = 100 * (xz + 0.5)
+        const sy = 100 * (this.Y - yz - 0.5)
         this.layerDom.appendChild(circle(sx, sy, color, 50))
     }
 
@@ -188,9 +121,9 @@ class MoveLayer {
     }
 
     doBox(key, color) {
-        let x = FILE_INDEX(key)
-        let y = this.Y - 1 - RANK_INDEX(key)
-        this.layerDom.appendChild(box(x * 100, y*100, (x+1) * 100, (y+1) * 100, color))
+        let xz = FILE_INDEX(key)
+        let yz = this.Y - 1 - RANK_INDEX(key)
+        this.layerDom.appendChild(box(xz * 100, yz*100, (xz+1) * 100, (yz+1) * 100, color))
     }
 
     clear() {
@@ -199,32 +132,21 @@ class MoveLayer {
     }
 
     showMovesFrom(key, hints) {
-        return this.showColorMovesFrom(key, hints, ACCENT, ACCENT_75)
+        return this.showColorMovesFrom(key, hints, DOT_HINT_INNER, CAP_HINT)
     }
-
-    //showPremovesFrom(key, hints) {
-    //    return this.showColorMovesFrom(key, hints, FRAME_75, FRAME_50)
-    //}
 
     showColorMovesFrom(key, hints, dotColor, capColor) {
         let targetSquares = []
         if (hints.hasOwnProperty(key)) {
             this.doBox(key, dotColor)
             for (let toIndex in hints[key]) {
-                let targetExt = hints[key][toIndex]
-                if (targetExt.length === 2) {
-                    this.doDotKey(targetExt, dotColor)
-                    targetSquares.push(targetExt)
-                    // hack TODO
-                    //if (this.flexBoard.pieces.hasOwnProperty(targetExt)) {
-                    //    this.doCapKey(targetExt)
-                    //} else {
-                    //    this.doDotKey(targetExt)
-                    //}
+                let targetKey = hints[key][toIndex]
+                if (this.flexBoard.pieces.hasOwnProperty(targetKey)) {
+                    this.doCapKey(targetKey, capColor)
+                    targetSquares.push(targetKey)
                 } else {
-                    let cap = targetExt.substr(0, 2)
-                    this.doCapKey(cap, capColor)
-                    targetSquares.push(cap)
+                    this.doDotKey(targetKey, dotColor)
+                    targetSquares.push(targetKey)
                 }
             }
         }
@@ -248,8 +170,9 @@ class ChessLayer {
         this.pieceImages = {}
         this.squareWraps = {}
 
-        //this.isMove = true
-        //this.isPremove = false
+        this.touchIdentifier = null
+        touchCancelCallbacks.push(this.onTouchCancel.bind(this))
+        window.ontouchcancel = touchCancel
 
         this.moves = {}
         this.sourceKey = null
@@ -257,6 +180,11 @@ class ChessLayer {
 
         this.createDom(this.zIndex)
         this.outerDom.appendChild(this.layerDom)
+    }
+
+    cancel() {
+        this.sourceKey = null
+        this.fingerOverKey = null
     }
 
     reset() {
@@ -278,9 +206,9 @@ class ChessLayer {
         return shift
     }
 
-    registerTouchEvent(touchEvent) {
-        this.touchX = touchEvent.changedTouches[0].pageX
-        this.touchY = touchEvent.changedTouches[0].pageY
+    registerTouchEvent(changedTouch) {
+        this.touchX = changedTouch.pageX
+        this.touchY = changedTouch.pageY
     }
 
     registerBoardPointer(touchEvent) {
@@ -289,12 +217,12 @@ class ChessLayer {
         this.boardPointerY = this.touchY - box.top
     }
 
-    calculateTouchShift(touchEvent) {
-        const shift = {x: touchEvent.changedTouches[0].pageX - this.touchX,
-                       y: touchEvent.changedTouches[0].pageY - this.touchY}
+    calculateTouchShift(changedTouch) {
+        const shift = {x: changedTouch.pageX - this.touchX,
+                       y: changedTouch.pageY - this.touchY}
         this.boardPointerX += shift.x
         this.boardPointerY += shift.y
-        this.registerTouchEvent(touchEvent)
+        this.registerTouchEvent(changedTouch)
         return shift
     }
 
@@ -336,11 +264,7 @@ class ChessLayer {
     }
 
     enableMoveFromSource(key) {
-//        if (this.isMove) {
         this.targetSquares = this.flexBoard.moveLayer.showMovesFrom(key, this.moves)
-//        } else if (this.isPremove) {
-//            this.targetSquares = this.flexBoard.moveLayer.showPremovesFrom(key, this.moves)
-//        }
         this.squareWraps[key].style.zIndex = this.zIndex + 1
         this.pieceImages[key].style.zIndex = this.zIndex + 1
         this.sourceKey = key
@@ -349,11 +273,7 @@ class ChessLayer {
     markTargetIfAcceptable(key) {
         this.flexBoard.dropLayer.clear()
         if (this.acceptTarget(key)) {
-            //if (this.isMove) {
             this.flexBoard.dropLayer.show(key, ACCENT)
-            //} else if (this.isPremove) {
-            //    this.flexBoard.dropLayer.show(key, FRAME_75)
-            //}
         }
     }
 
@@ -363,11 +283,12 @@ class ChessLayer {
         window.onmousemove = this.onMouseMove.bind(this)
     }
 
-    enableMoveFromSourceWithTouch(key, touchEvent) {
+    enableMoveFromSourceWithTouch(key, changedTouch) {
         this.enableMoveFromSource(key)
-        this.registerTouchEvent(touchEvent)
+        this.registerTouchEvent(changedTouch)
         this.registerBoardPointer()
         window.ontouchmove = this.onTouchMove.bind(this)
+//        throttle(this.onTouchMove.bind(this), DEFAULT_THROTTLE_RATE)
     }
 
     clearPreviousSource() {
@@ -383,11 +304,7 @@ class ChessLayer {
     }
 
     acceptSourceTarget(sourceKey, targetKey) {
-        //if (this.isMove) {
         this.flexBoard.makeHumanMove(sourceKey, targetKey)
-        //} else if (this.isPremove) {
-        //    this.flexBoard.makeHumanPremove(sourceKey, targetKey)
-        //}
     }
 
     getOnMouseDown(key) {
@@ -397,15 +314,15 @@ class ChessLayer {
                 if (this.sourceKey == key) {
                     // toggle selected source square
                     this.disablePreviousSource()
-                } else if (this.acceptSource(key)) {
-                    // change selected source square
-                    this.disablePreviousSource()
-                    this.enableMoveFromSourceWithMouse(key, mouseEvent)
                 } else if (this.acceptTarget(key)) {
                     // make move
                     this.clearPreviousSource()
                     this.acceptSourceTarget(this.sourceKey, key);
                     this.sourceKey = null
+                } else if (this.acceptSource(key)) {
+                    // change selected source square
+                    this.disablePreviousSource()
+                    this.enableMoveFromSourceWithMouse(key, mouseEvent)
                 } else {
                     // ignore
                 }
@@ -414,8 +331,8 @@ class ChessLayer {
             } else {
                 //ignore
             }
-        }
-        return onMouseDown.bind(this)
+        }.bind(this)
+        return onMouseDown
     }
 
     getOnMouseOver(key) {
@@ -426,15 +343,11 @@ class ChessLayer {
             } else {
                 this.flexBoard.moveLayer.clear()
                 if (this.acceptSource(key)) {
-                    //if (this.isMove) {
                     this.flexBoard.moveLayer.showMovesFrom(key, this.moves)
-                    //} else if (this.isPremove) {
-                    //    this.flexBoard.moveLayer.showPremovesFrom(key, this.moves)
-                    //}
                 }
             }
-        }
-        return onMouseOver.bind(this)
+        }.bind(this)
+        return onMouseOver
     }
 
     onMouseMove(mouseEvent) {
@@ -448,9 +361,7 @@ class ChessLayer {
         const onMouseUp = function(mouseEvent) {
             mouseEvent.preventDefault()
             window.onmousemove = null
-            if (this.sourceKey == null) {
-                return
-            } else {
+            if (this.sourceKey != null) {
                 this.resetDraggedPiece(this.pieceImages[this.sourceKey])
                 if (this.acceptTarget(key)) {
                     this.clearPreviousSource()
@@ -459,42 +370,50 @@ class ChessLayer {
                     this.sourceKey = null
                 }
             }
-        }
-        return onMouseUp.bind(this)
+        }.bind(this)
+        return onMouseUp
     }
 
     getOnTouchDown(key) {
         const onTouchDown = function(touchEvent) {
-            touchEvent.preventDefault()
+            if (this.touchIdentifier != null) {
+                return
+            }
+            const changedTouch = touchEvent.changedTouches[0]
+            this.touchIdentifier = changedTouch.identifier
             window.ontouchend = this.onTouchUp.bind(this)
             if (this.sourceKey != null) {
                 if (this.sourceKey == key) {
                     // toggle selected source square
                     this.disablePreviousSource()
-                } else if (this.acceptSource(key)) {
-                    // change selected source square
-                    this.disablePreviousSource()
-                    this.enableMoveFromSourceWithTouch(key, touchEvent)
                 } else if (this.acceptTarget(key)) {
                     // make move
                     this.clearPreviousSource()
                     this.acceptSourceTarget(this.sourceKey, key);
                     this.sourceKey = null
+                } else if (this.acceptSource(key)) {
+                    // change selected source square
+                    this.disablePreviousSource()
+                    this.enableMoveFromSourceWithTouch(key, changedTouch)
                 } else {
                     // ignore
                 }
             } else if (this.acceptSource(key)) {
-                this.enableMoveFromSourceWithTouch(key, touchEvent)
+                this.enableMoveFromSourceWithTouch(key, changedTouch)
             } else {
                 //ignore
             }
-        }
-        return onTouchDown.bind(this)
+        }.bind(this)
+        return onTouchDown
     }
 
     onTouchMove(touchEvent) {
-        //touchEvent.preventDefault()
-        const shift = this.calculateTouchShift(touchEvent)
+        const changedTouches = Array.from(touchEvent.changedTouches).filter(t => t.identifier === this.touchIdentifier)
+        if (changedTouches.length === 0) {
+            return
+        }
+        const changedTouch = changedTouches[0]
+        const shift = this.calculateTouchShift(changedTouch)
         let pieceImage = this.pieceImages[this.sourceKey]
         this.shiftDraggedPiece(pieceImage, shift)
         this.fingerOverKey = this.getFingerOverKey()
@@ -503,11 +422,10 @@ class ChessLayer {
 
     onTouchUp(touchEvent) {
         touchEvent.preventDefault()
-        window.ontouchmove = null
-        window.ontouchend = null
-        if (this.sourceKey == null) {
+        if (this.onTouchCancel(touchEvent)) {
             return
-        } else {
+        }
+        if (this.sourceKey != null) {
             this.resetDraggedPiece(this.pieceImages[this.sourceKey])
             if (this.acceptTarget(this.fingerOverKey)) {
                 this.clearPreviousSource()
@@ -519,10 +437,21 @@ class ChessLayer {
         }
     }
 
+    onTouchCancel(touchEvent) {
+        const changedTouches = Array.from(touchEvent.changedTouches).filter(t => t.identifier === this.touchIdentifier)
+        if (changedTouches.length === 0) {
+            return true
+        }
+        window.ontouchmove = null
+        window.ontouchend = null
+        this.touchIdentifier = null
+        return false
+    }
+
     createDom(zIndex) {
         this.layerDom = div({style: "position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: " + zIndex})
         let that = this
-        forEachSquare(this.X, this.Y, function (x, y, key) {
+        FOR_EACH_KEY(this.X, this.Y, function (xz, yz, key) {
             let squareWrap = div()
             squareWrap.style.position = 'absolute'
             squareWrap.style.zIndex = zIndex
@@ -549,9 +478,9 @@ class ChessLayer {
     doOnResize() {
         restyle(this.layerDom, this.width, this.height, this.left, this.top)
         let that = this
-        forEachSquare(this.X, this.Y, function (x, y, key) {
+        FOR_EACH_KEY(this.X, this.Y, function (xz, yz, key) {
             let squareSize = that.squareSize
-            restyle(that.squareWraps[key], squareSize, squareSize, (x * squareSize), ((that.Y - y - 1) * squareSize))
+            restyle(that.squareWraps[key], squareSize, squareSize, (xz * squareSize), ((that.Y - yz - 1) * squareSize))
         })
     }
 
@@ -559,19 +488,24 @@ class ChessLayer {
         this.squareWraps[key].innerHTML = ''
     }
 
-    show(key, pieceSymbol) {
+    getImage(pieceSymbol, opacity) {
         const piece = (isUpper(pieceSymbol)) ? ('w' + pieceSymbol) : ('b' + toUpper(pieceSymbol))
 
         let pieceDom = img({
             src: 'img/chesspieces/staunty/' + piece + '.png',
-            style: 'position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: ' + this.zIndex
+            style: 'position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: ' + this.zIndex + '; opacity: ' + opacity
         })
 
+        return pieceDom
+    }
+
+    show(key, pieceSymbol) {
+        let pieceDom = this.getImage(pieceSymbol)
         this.squareWraps[key].innerHTML = ''
         this.squareWraps[key].appendChild(pieceDom)
         this.pieceImages[key] = pieceDom
     }
-
+/*
     move(key0, key1, promotion) {
         let pieceImage = this.pieceImages[key0]
         this.squareWraps[key0].innerHTML = ''
@@ -583,6 +517,77 @@ class ChessLayer {
             this.squareWraps[key1].appendChild(pieceImage)
             this.pieceImages[key1] = pieceImage
         }
+    }
+*/
+/*
+    morph(key, pPromoted) {
+        let piece = this.pieceImages[key]
+        let square = this.squareWraps[key]
+        let over = this.getImage(pPromoted, 0)
+        piece.style.opacity = 0
+        piece.style.transition = 'opacity 0.2s'
+        square.appendChild(over)
+        over.style.opacity = 0
+        over.style.transition = 'opacity 0.2s'
+        setTimeout(function() {
+            piece.parentNode.removeChild(piece)
+        }.bind(this), 200)
+    }
+*/
+    promote(key0, keyPromoted, pPromoted) {
+        let piece0 = this.pieceImages[key0]
+        let square0 = this.squareWraps[key0]
+        delete this.pieceImages[key0]
+        square0.innerHTML = ''
+        this.show(keyPromoted, pPromoted)
+        /*
+        let piece0 = this.pieceImages[key0]
+        let square1 = this.squareWraps[keyPromoted]
+
+        this.animate(key0, keyPromoted);
+
+        const DISPLAY_MILLIS = 250
+
+        setTimeout(function() {
+            this.morph(keyPromoted, pPromoted)
+        }.bind(this), DISPLAY_MILLIS)
+        */
+    }
+
+    destroy(key) {
+        if (this.pieceImages.hasOwnProperty(key)) {
+            const piece = this.pieceImages[key]
+            piece.parentNode.removeChild(piece)
+        }
+    }
+
+    animate(key0, key1) {
+        let piece0 = this.pieceImages[key0]
+        let square1 = this.squareWraps[key1]
+        square1.innerHTML = ''
+        square1.appendChild(piece0)
+        delete this.pieceImages[key0]
+        this.pieceImages[key1] = piece0
+        /*
+        let piece0 = this.pieceImages[key0]
+        let square1 = this.squareWraps[key1]
+
+        const box0 = piece0.getBoundingClientRect()
+        const box1 = square1.getBoundingClientRect()
+
+        const left = box1.left - box0.left
+        const top = box1.top - box0.top
+        const DISPLAY_MILLIS = 200
+
+        piece0.style.transition = 'translate(' + left + 'px, ' + top + 'px) 0.2s ease-in-out'
+        setTimeout(function() {
+            square1.innerHTML = ''
+            square1.appendChild(piece0)
+            piece0.style.left = "0px"
+            piece0.style.top = "0px"
+        }, DISPLAY_MILLIS)
+
+         */
     }
 }
 
@@ -635,55 +640,55 @@ class MenuLayer {
         return ((x >= this.MIN_X) && (y >= this.MIN_Y) && (x <= this.MAX_X) && (y <= this.MAX_Y))
     }
 
-    onSquareTouch(x, y, key) {
-        if (key != this.selectedKey) {
-            this.onSquareOver(x, y, key)
+    onSquareTouch(xz, yz, key) {
+        if (key !== this.selectedKey) {
+            this.onSquareOver(xz, yz, key)
             this.changeResolution(this.X, this.Y)
         } else {
-            this.onSquareClick(x, y, key)
+            this.onSquareClick(xz, yz, key)
         }
     }
 
-    onSquareClick(x, y, key) {
-        this.X = x + 1
-        this.Y = y + 1
+    onSquareClick(xz, yz, key) {
+        this.X = xz + 1
+        this.Y = yz + 1
         this.changeResolution(this.X, this.Y)
         this.startActivityIntent(this.X, this.Y)
     }
 
-    onSquareOver(x, y, key) {
-        this.X = x + 1
-        this.Y = y + 1
-        this.dots[this.selectedKey].setAttribute('fill', ACCENT)
+    onSquareOver(xz, yz, key) {
+        this.X = xz + 1
+        this.Y = yz + 1
+        this.dots[this.selectedKey].setAttribute('fill', DOT_MENU_INNER_NORM)
         this.selectedKey = key
-        this.dots[this.selectedKey].setAttribute('fill', FRAME)
+        this.dots[this.selectedKey].setAttribute('fill', DOT_MENU_INNER_PICK)
         this.reframe()
     }
 
     createDom(zIndex) {
         this.layerDom = div({style: "position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: " + zIndex})
         let that = this
-        forEachSquare(this.MAX_X, this.MAX_Y, function (x, y, key) {
+        FOR_EACH_KEY(this.MAX_X, this.MAX_Y, function (xz, yz, key) {
             let squareWrap = div()
             squareWrap.style.position = 'absolute'
             squareWrap.style.zIndex = zIndex
             that.layerDom.appendChild(squareWrap)
             that.squareWraps[key] = squareWrap
-            if (!that.isValid(x+1, y+1)) {
+            if (!that.isValid(xz+1, yz+1)) {
                 return
             }
-            that.dots[key] = that.flexBoard.moveLayer.doMenuDot(x, y)
+            that.dots[key] = that.flexBoard.moveLayer.doMenuDot(xz, yz)
             if (that.touchMenu) {
                 squareWrap.addEventListener('touchstart', function () {
-                    that.onSquareTouch(x, y, key)
+                    that.onSquareTouch(xz, yz, key)
                 })
             } else {
                 squareWrap.addEventListener('click', function () {
-                    that.onSquareClick(x, y, key)
+                    that.onSquareClick(xz, yz, key)
                 })
                 squareWrap.addEventListener('mouseover', function () {
                     if (that.dots.hasOwnProperty(key)) {
-                      that.onSquareOver(x, y, key)
+                      that.onSquareOver(xz, yz, key)
                     }
                 })
             }
@@ -695,8 +700,8 @@ class MenuLayer {
     onResize(width, height, left, top, squareSize, frameThickness) {
         restyle(this.layerDom, width, height, left, top)
         let that = this
-        forEachSquare(this.MAX_X, this.MAX_Y, function (x, y, key) {
-            restyle(that.squareWraps[key], squareSize, squareSize, (x * squareSize), ((that.MAX_Y - y - 1) * squareSize))
+        FOR_EACH_KEY(this.MAX_X, this.MAX_Y, function (xz, yz, key) {
+            restyle(that.squareWraps[key], squareSize, squareSize, (xz * squareSize), ((that.MAX_Y - yz - 1) * squareSize))
         })
         this.left = left
         this.top = top
@@ -718,10 +723,9 @@ class HintLayer {
 
         this.zIndex = zIndex
 
-        this.createDom(zIndex)
+        this.createDom(this.zIndex)
         dom.appendChild(this.layerDom)
 
-//        this.markers = {}
         this.captures = {}
     }
 
@@ -736,43 +740,23 @@ class HintLayer {
         dom.style.left = (((FILE_INDEX(key) + 1) * this.squareSize - captureSize)) + 'px'
         dom.style.top = ((this.Y - 1 - RANK_INDEX(key)) * this.squareSize) + 'px'
     }
-/*
-    restyleMarker(key, dom) {
-        const markerSize = this.squareSize / 2
-        dom.style.width = markerSize + 'px'
-        dom.style.height = markerSize + 'px'
-        dom.style.left = (((FILE_INDEX(key) + 1) * this.squareSize - markerSize)) + 'px'
-        dom.style.top = ((this.Y - RANK_INDEX(key) - 1) * this.squareSize - markerSize) + 'px'
-    }
-*/
+
     onResize(width, height, left, top, squareSize, frame) {
         restyle(this.layerDom, width, height, left, top)
         this.left = left + frame
         this.top = top + frame
         this.squareSize = squareSize
-        //for (let key in this.markers) {
-        //    this.restyleMarker(key, this.markers[key])
-        //}
         for (let key in this.captures) {
             this.restyleCapture(key, this.captures[key])
         }
     }
 
     clear() {
-        //this.markers = {}
         this.captures = {}
         this.layerDom.innerHTML = ''
     }
 
-/*
-    showMarker(key, markerType) {
-        let markerDom = img({src: 'img/markers/wychess-marker-' + markerType + '.png', style: 'position: absolute;'})
-        this.layerDom.appendChild(markerDom)
-        this.restyleMarker(key, markerDom)
-        this.markers[key] = markerDom
-    }
-*/
-    showCapture(key, pieceSymbol) {
+    capture(key, pieceSymbol) {
         const piece = (isUpper(pieceSymbol)) ? ('w' + pieceSymbol) : ('b' + toUpper(pieceSymbol))
         let pieceDom = img({
             src: 'img/chesspieces/staunty/' + piece + '.png',
@@ -780,7 +764,7 @@ class HintLayer {
         })
         this.layerDom.appendChild(pieceDom)
         this.restyleCapture(key, pieceDom)
-        const DISPLAY_MILLIS = 3000
+        const DISPLAY_MILLIS = 1500
         setTimeout(function() {
             pieceDom.style.opacity = 0
             pieceDom.style.transition = 'opacity 0.5s'
@@ -798,14 +782,14 @@ class FlexBoard {
           onPositionRegistered: this.defaultOnPositionRegistered.bind(this),
           onHumanMoveRegistered: this.defaultOnHumanMoveRegistered.bind(this),
           onEngineMoveRegistered: this.defaultOnEngineMoveRegistered.bind(this),
-          marginPercent: 3
+          marginPercent: 7
         }
         this.config = {...defaultConfig, ...config}
 
-        this.sideToMove = 0
-
         this.X = X
         this.Y = Y
+        this.XZ = X - 1
+        this.YZ = Y - 1
 
         this.hints = {}
 
@@ -820,6 +804,8 @@ class FlexBoard {
         this.innerDom.appendChild(this.boardDom)
         this.loaderDom = this.createLoaderDom()
         this.outerDom.appendChild(this.loaderDom)
+        this.notifyDom = this.createNotifyDom()
+        this.outerDom.appendChild(this.notifyDom)
 
         this.dropLayer = new GenericLayer(this.innerDom, X, Y, 100)
         this.lastLayer = new GenericLayer(this.innerDom, X, Y, 200)
@@ -830,8 +816,6 @@ class FlexBoard {
         this.innerDom.appendChild(this.lastLayer.layerDom)
         this.innerDom.appendChild(this.moveLayer.layerDom)
         this.innerDom.appendChild(this.hintLayer.layerDom)
-
-        //this.lastMove = null
 
         this.actAsMenu = config.hasOwnProperty('startActivityIntent')
 
@@ -869,32 +853,17 @@ class FlexBoard {
 ///////////////////////////////////////////////////////////////////////////////
 
     makeMoveAnd(key0, key1, moveFunction, moveCallback) {
-        const fen0 = this.dump()
-        if (!moveFunction(key0, key1)) {
-            return false
-        }
-        const fen1 = this.dump()
-        moveCallback(fen0, fen1, key0, key1)
+        moveFunction(key0, key1)
+        moveCallback(key0, key1)
         return true
     }
 
     makeHumanMove(key0, key1) {
-        return this.makeMoveAnd(key0, key1, this.makeMove.bind(this), this.config.onHumanMoveRegistered)
+        return this.makeMoveAnd(key0, key1, this.makeMoveDecode.bind(this), this.config.onHumanMoveRegistered)
     }
 
-    //makeHumanPremove(key0, key1) {
-    //    this.lastLayer.clear()
-    //    if (this.lastMove != null) {
-    //        this.lastLayer.show(lastMove[0], LAST)
-    //        this.lastLayer.show(lastMove[1], LAST)
-    //    }
-    //    this.lastLayer.show(key0, FRAME_50)
-    //    this.lastLayer.show(key1, FRAME_50)
-    //    return this.premove = [key0, key1]
-    //}
-
     makeEngineMove(key0, key1) {
-        return this.makeMoveAnd(key0, key1, this.makeMoveUnsafe.bind(this), this.config.onEngineMoveRegistered)
+        return this.makeMoveAnd(key0, key1, this.makeMoveDecode.bind(this), this.config.onEngineMoveRegistered)
     }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -912,12 +881,12 @@ class FlexBoard {
         boardDom.style.left = '0px'
         boardDom.style.border = '3px solid ' + FRAME
         let that = this
-        this.forEachSquare(function (x, y, key) {
+        this.forEachSquare(function (xz, yz, key) {
             let squareDom = div({style: "z-index: 1"})
             squareDom.style.position = 'absolute'
             that.squares[key] = squareDom
             boardDom.append(squareDom)
-            let isWhite = (x + that.Y - y) % 2 === 1
+            let isWhite = (xz + that.Y - yz) % 2 === 1
             if (isWhite) {
                 squareDom.style.backgroundColor = WHITE
             } else {
@@ -934,6 +903,16 @@ class FlexBoard {
         )
     }
 
+    createNotifyDom() {
+        return div({style: "position: absolute;" +
+            "border-radius: 5px;" +
+            "background-color: white;" +
+            "visibility: hidden;" +
+            "text-align: center;" +
+            "border: 3px " + FRAME + " solid;" +
+            "color: " + FRAME + ";"})
+    }
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -945,11 +924,24 @@ class FlexBoard {
         this.loaderDom.style.visibility = 'hidden'
     }
 
+    notify(text) {
+        const notifyMillis = 1500
+        this.notifyExpires = Date.now() + notifyMillis
+        this.notifyDom.innerHTML = ''
+        this.notifyDom.style.visibility = 'visible'
+        this.notifyDom.appendChild($$$(span({style: "position: absolute; left: 50%; top: 50%; transform: translateY(-50%) translateX(-50%);"}), text))
+        setTimeout(function() {
+            if (Date.now() >= this.notifyExpires) {
+                this.notifyDom.style.visibility = 'hidden'
+            }
+        }.bind(this), notifyMillis)
+    }
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
     forEachSquare(onSquare) {
-        forEachSquare(this.X, this.Y, onSquare)
+        FOR_EACH_KEY(this.X, this.Y, onSquare)
     }
 
     onResize() {
@@ -1017,9 +1009,9 @@ class FlexBoard {
         this.boardDom.style.left = this.leftMargin + 'px'
 
         let that = this
-        this.forEachSquare(function (x, y, key) {
+        this.forEachSquare(function (xz, yz, key) {
             const squareSize = that.squareSize
-            restyle(that.squares[key], squareSize, squareSize, (x * squareSize), ((that.Y - y - 1) * squareSize))
+            restyle(that.squares[key], squareSize, squareSize, (xz * squareSize), ((that.Y - yz - 1) * squareSize))
         })
 
         this.dropLayer.onResize(this.boardWidth, this.boardHeight,
@@ -1040,18 +1032,23 @@ class FlexBoard {
         }
 
         restyle(this.loaderDom, this.loaderSize, this.loaderSize, this.loaderLeft, this.loaderTop)
+
+        const notifySize = this.loaderSize / 2
+        const notifyTop = this.loaderTop + notifySize / 2
+        restyle(this.notifyDom, this.loaderSize, notifySize, this.loaderLeft, notifyTop)
+        this.notifyDom.style.fontSize = (this.loaderSize / 3.0) + "px"
     }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-    dump() {
+    dumpCore() {
         let note = []
         let line = []
         let empty = 0
-        for (let y = this.Y - 1; y >= 0; y--) {
-            for (let x = 0; x < this.X; x++) {
-                let key = KEY(x, y)
+        for (let yz = this.Y - 1; yz >= 0; yz--) {
+            for (let xz = 0; xz < this.X; xz++) {
+                let key = KEY(xz, yz)
                 if (this.pieces.hasOwnProperty(key)) {
                     if (empty > 0) {
                         line.push(empty)
@@ -1069,34 +1066,37 @@ class FlexBoard {
             note.push(line.join(''))
             line = []
         }
-        return note.join('/') + ' ' + ((this.sideToMove == 0) ? "w" : "b") + ' - - 0 ' + Math.floor((this.plyCount + 1) / 2)
+        return note.join('/') // + ' ' + ((this.sideToMove === 1) ? "w" : "b") + ' - - 0 ' + Math.floor((this.plyCount + 1) / 2)
     }
 
-    fen(flexfen) {
-        if (typeof flexfen === "undefined") {
-            return this.dump()
-        }
-
-        const fenSplit = flexfen.split(' ')
-        if (fenSplit.length != 6) {
-          this.plyCount = 1
+    load(fen) {
+        const fenTokens = fen.split(' ')
+        if (fenTokens.length !== FULL) {
+            this.plyCount = 1
         } else {
-          this.plyCount = parseInt(fenSplit[5]) * 2 - ((fenSplit[1] == 'w') ? 1 : 0)
+            this.plyCount = parseInt(fenTokens[PLY2]) * 2 - ((fenTokens[SIDE] === 'w') ? 1 : 0)
         }
 
-        const boardArray = flattenFen(flexfen.split(' ')[0]).split('')
+        this.sideToMove = (fenTokens.length > SIDE) ? ((fenTokens[SIDE] === 'w') ? SIDE_WHITE : SIDE_BLACK) : SIDE_WHITE
 
-        if (boardArray.length != this.X * this.Y) {
+        const boardArray = FLATTEN_FEN_BASE(fenTokens[BASE]).split('')
+
+        if (boardArray.length !== this.X * this.Y) {
             throw "Corrupted FEN"
         }
 
         this.chessLayer.reset()
         this.pieces = {}
+        this.hints = {}
+
+        this.dropLayer.clear()
+        this.moveLayer.clear()
+        this.lastLayer.clear()
+        this.hintLayer.clear()
 
         let that = this
-        this.forEachSquare(function (x, y, key) {
-            const pieceSymbol = boardArray[x + (that.Y - y - 1) * that.X]
-            let piece = ''
+        this.forEachSquare(function (xz, yz, key) {
+            const pieceSymbol = boardArray[xz + (that.Y - yz - 1) * that.X]
             if (pieceSymbol == '.') {
                 return
             }
@@ -1104,13 +1104,7 @@ class FlexBoard {
             that.chessLayer.show(key, pieceSymbol)
         })
 
-        this.hints = {}
-
-        this.dropLayer.clear()
-        this.moveLayer.clear()
-        this.lastLayer.clear()
-
-        this.config.onPositionRegistered(this.dump())
+//        this.config.onPositionRegistered(this.dump())
     }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1135,66 +1129,168 @@ class FlexBoard {
         return null
     }
 
-    makeMove(key0, key1) {
-        if (!this.hints.hasOwnProperty(key0)) {
-            return false
-        } else if (
-            (this.hints[key0].indexOf(key1) === -1)
-            &&
-            (this.hints[key0].indexOf(key1 + 'x') === -1)) {
-            return false
+    makeMoveEnPassant(key0, key1, keyPasse) {
+        this.chessLayer.destroy(keyPasse)
+        this.chessLayer.animate(key0, key1)
+        this.hintLayer.capture(key1, this.pieces[keyPasse])
+
+        this.lastLayer.highlight([key0, key1, keyPasse], LAST)
+
+        this.pieces[key1] = this.pieces[key0]
+        delete this.pieces[key0]
+        delete this.pieces[keyPasse]
+    }
+
+    makeMoveCastling(key0, key1, keyKing, keyRook) {
+        this.chessLayer.destroy(key0)
+        this.chessLayer.destroy(key1)
+        this.chessLayer.show(keyKing, this.pieces[key0])
+        this.chessLayer.show(keyRook, this.pieces[key1])
+
+        this.lastLayer.highlight([key0, key1, keyKing, keyRook], LAST)
+
+        const pKing = this.pieces[key0]
+        const pRook = this.pieces[key1]
+        delete this.pieces[key0]
+        delete this.pieces[key1]
+        this.pieces[keyKing] = pKing
+        this.pieces[keyRook] = pRook
+    }
+
+    makeMovePromoted(key0, keyPromoted, p1, pPromoted) {
+        this.chessLayer.destroy(key0)
+        this.chessLayer.show(keyPromoted, pPromoted)
+        if (p1 !== '-') {
+            this.hintLayer.capture(keyPromoted, p1)
         }
-        return this.makeMoveUnsafe(key0, key1)
+
+        this.lastLayer.highlight([key0, keyPromoted], LAST)
+
+        delete this.pieces[key0]
+        this.pieces[keyPromoted] = pPromoted
     }
 
-    makeMoveUnsafe(key0, key1) {
-        try {
-            this.pieces[key1] = this.pieces[key0]
-            delete this.pieces[key0]
-
-            const promotion = this.promoteIfPossible(key1)
-
-            this.sideToMove = 1 - this.sideToMove
-
-            //this.lastMove = [key0, key1]
-            this.lastLayer.clear()
-            this.lastLayer.show(key0, LAST)
-            this.lastLayer.show(key1, LAST)
-
-            this.chessLayer.move(key0, key1, promotion)
-
-            this.plyCount += 1
-
-            this.chessLayer.clickKey = null
-
-            return true
-        } catch (e) {
-            return false
+    makeMoveRegular(key0, key1, p0, p1) {
+        this.chessLayer.animate(key0, key1)
+        if (p1 !== '-') {
+            this.hintLayer.capture(key1, p1)
         }
+
+        this.lastLayer.highlight([key0, key1], LAST)
+
+        this.pieces[key1] = this.pieces[key0]
+        delete this.pieces[key0]
     }
 
-    allowMoves(moves) {
-        this.hints = moves
-        //this.chessLayer.isPremove = false
-        //this.chessLayer.isMove = true
-        this.chessLayer.moves = moves
+    makeMoveDecode(key0, key1) {
+        const xz0 = FILE_INDEX(key0)
+        const yz0 = RANK_INDEX(key0)
+        const xz1 = FILE_INDEX(key1)
+        const yz1 = RANK_INDEX(key1)
+
+        const p0 = this.pieces.hasOwnProperty(key0) ? this.pieces[key0] : '-'
+        const p1 = this.pieces.hasOwnProperty(key1) ? this.pieces[key1] : '-'
+
+        // handle en passant
+        if (((p0 === 'P') || (p0 === 'p')) && (xz0 !== xz1) && (p1 === '-')) {
+            if (p0 === 'P') {
+                const keyPasse = KEY(xz1, yz1 - 1)
+                this.makeMoveEnPassant(key0, key1, keyPasse)
+            } else {
+                const keyPasse = KEY(xz1, yz1 + 1)
+                this.makeMoveEnPassant(key0, key1, keyPasse)
+            }
+        }
+
+        // handle castling
+        else if (((p0 === 'K') && (p1 === 'R')) || ((p0 === 'k') && (p1 === 'r'))) {
+            if (xz0 > xz1) {
+                const kxz = Math.max(xz1, xz0 - 2)
+                const rxz = kxz + 1
+                const keyKing = KEY(kxz, yz0)
+                const keyRook = KEY(rxz, yz1)
+                this.makeMoveCastling(key0, key1, keyKing, keyRook)
+            } else {
+                const kxz = Math.min(xz1, xz0 + 2)
+                const rxz = kxz - 1
+                const keyKing = KEY(kxz, yz0)
+                const keyRook = KEY(rxz, yz1)
+                this.makeMoveCastling(key0, key1, keyKing, keyRook)
+            }
+        }
+
+        // handle promotion
+        else if (((p0 === 'P') && (yz0 === this.YZ - 1)) || ((p0 === 'p') && (yz0 === 1))) {
+            if (p0 === 'P') {
+                const pPromoted = ['Q', 'R', 'B', '-', 'N'][this.YZ - yz1]
+                const keyPromoted = KEY(xz1, this.YZ)
+                this.makeMovePromoted(key0, keyPromoted, p1, pPromoted)
+            } else {
+                const pPromoted = ['q', 'r', 'b', '-', 'n'][yz1]
+                const keyPromoted = KEY(xz1, 0)
+                this.makeMovePromoted(key0, keyPromoted, p1, pPromoted)
+            }
+        }
+
+        // handle regular move
+        else {
+            this.makeMoveRegular(key0, key1, p0, p1)
+        }
+
+        this.chessLayer.sourceKey = null
+        this.chessLayer.fingerOverKey = null
+        this.chessLayer.touchIdentifier = null
     }
 
-    //allowPremoves(moves) {
-    //    this.chessLayer.isMove = false
-    //    this.chessLayer.isPremove = true
-    //    this.chessLayer.moves = moves
-    //}
+    parseLine(line) {
+        let hints = {}
+        const moves = line.split(' ')
+        for (let i in moves) {
+            const move = moves[i]
+            if (move.length >= 4) {
+                const key0 = UCI_KEY0(move)
+                const key1Cap = UCI_KEY1CAP(move)
+                if (!hints.hasOwnProperty(key0)) {
+                    hints[key0] = []
+                }
+                hints[key0].push(key1Cap)
+            }
+        }
+        return hints
+    }
+
+    allowMoves(hints) {
+        this.hints = hints
+        this.chessLayer.moves = hints
+    }
+
+    disableMoves() {
+        this.hints = {}
+        this.chessLayer.moves = {}
+    }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // compatibility with chessboardjs
 
-    position(fenString) {
-        if ((typeof fenString == "undefined") || (fenString === null)) {
+    position(fen) {
+        if ((typeof fen === "undefined") || (fen === null)) {
             return this.dump()
         } else {
-            this.fen(fenString)
+            this.load(fen)
+            this.chessLayer.touchIdentifier = null
+            this.chessLayer.sourceKey = null
+            this.chessLayer.fingerOverKey = null
         }
+    }
+
+    highlight(key0, key1) {
+        this.lastLayer.highlight([key0, key1], LAST)
+    }
+
+    highlightMove(move) {
+        const key0 = UCI_KEY0(move)
+        const key1 = UCI_KEY1(move)
+        this.highlight(key0, key1)
     }
 }

@@ -1,38 +1,3 @@
-const DOUBLE_TAP_MILLIS = 500
-const HOLD_AND_TAP_MARKER_MILLIS = 500
-const HOLD_AND_TAP_COMMIT_MILLIS = 1500
-
-const DEFAULT_THROTTLE_RATE = 25
-
-function throttle (f, interval, scope) {
-    var timeout = 0
-    var shouldFire = false
-    var args = []
-
-    var handleTimeout = function () {
-        timeout = 0
-        if (shouldFire) {
-            shouldFire = false
-            fire()
-        }
-    }
-
-    var fire = function () {
-        timeout = window.setTimeout(handleTimeout, interval)
-        f.apply(scope, args)
-    }
-
-    return function (_args) {
-        args = arguments
-        if (!timeout) {
-            fire()
-        } else {
-            shouldFire = true
-        }
-    }
-}
-
-
 class FlexGest {
     constructor(outerDom, innerDom, actions) {
         const voidAction = function () {}
@@ -48,16 +13,23 @@ class FlexGest {
         this.outerDom = outerDom
         this.innerDom = innerDom
 
+        this.touchIdentifier = null
+
         this.touchStart = 0
         this.touchEnded = 0
         this.touchRetap = 0
         this.enableTabAndHoldCancel = false
 
         this.outerDom.addEventListener('touchstart', this.onTouchDown.bind(this))
-        window.ontouchcancel = this.onTouchCancel.bind(this)
+        touchCancelCallbacks.push(this.onTouchCancel.bind(this))
+        window.ontouchcancel = touchCancel
     }
 
     onTouchCancel(touchEvent) {
+        const changedTouches = Array.from(touchEvent.changedTouches).filter(t => t.identifier === this.touchIdentifier)
+        if (changedTouches.length === 0) {
+            return
+        }
         window.ontouchmove = null
         window.ontouchend = null
         this.touchEnded = Date.now()
@@ -65,13 +37,20 @@ class FlexGest {
             this.actions.tapAndHoldCancel()
             this.enableTabAndHoldCancel = false
         }
+        this.touchIdentifier = null
     }
 
     onTouchDown(touchEvent) {
-        this.touchStart = Date.now()
+        if (this.touchIdentifier != null) {
+            return
+        }
 
-        const touchX = touchEvent.changedTouches[0].pageX
-        const touchY = touchEvent.changedTouches[0].pageY
+        this.touchStart = Date.now()
+        const changedTouch = touchEvent.changedTouches[0]
+        this.touchIdentifier = changedTouch.identifier
+
+        const touchX = changedTouch.pageX
+        const touchY = changedTouch.pageY
         const innerBound = this.innerDom.getBoundingClientRect()
         const outerBound = this.outerDom.getBoundingClientRect()
         const minX = innerBound.left
@@ -81,14 +60,14 @@ class FlexGest {
         const slideCheck = function (a, b, c, d) {
             return (a < b) && (c < d)
         }
-        this.detectSlideAccept = function (touchEvent) {
-            const nowX = touchEvent.changedTouches[0].pageX
-            const nowY = touchEvent.changedTouches[0].pageY
+        this.detectSlideAccept = function(changedTouch) {
+            const nowX = changedTouch.pageX
+            const nowY = changedTouch.pageY
             return slideCheck(touchX, minX, maxX, nowX) || slideCheck(touchY, minY, maxY, nowY)
         }
-        this.detectSlideReject = function (touchEvent) {
-            const nowX = touchEvent.changedTouches[0].pageX
-            const nowY = touchEvent.changedTouches[0].pageY
+        this.detectSlideReject = function(changedTouch) {
+            const nowX = changedTouch.pageX
+            const nowY = changedTouch.pageY
             return slideCheck(nowX, minX, maxX, touchX) || slideCheck(nowY, minY, maxY, touchY)
         }
 
@@ -114,16 +93,26 @@ class FlexGest {
     }
 
     onTouchMove(touchEvent) {
-        if (this.detectSlideAccept(touchEvent)) {
+        const changedTouches = Array.from(touchEvent.changedTouches).filter(t => t.identifier === this.touchIdentifier)
+        if (changedTouches.length === 0) {
+            return
+        }
+        const changedTouch = changedTouches[0]
+        if (this.detectSlideAccept(changedTouch)) {
             this.actions.slideAccept()
             this.onTouchCancel(touchEvent)
-        } else if (this.detectSlideReject(touchEvent)) {
+        } else if (this.detectSlideReject(changedTouch)) {
             this.actions.slideReject()
             this.onTouchCancel(touchEvent)
         }
     }
 
     onTouchUp(touchEvent) {
+        touchEvent.preventDefault()
+        const changedTouches = Array.from(touchEvent.changedTouches).filter(t => t.identifier === this.touchIdentifier)
+        if (changedTouches.length === 0) {
+            return
+        }
         const now = Date.now()
         if (now - this.touchRetap < DOUBLE_TAP_MILLIS) {
             this.actions.doubleTap()
