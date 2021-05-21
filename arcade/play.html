@@ -81,12 +81,16 @@
         },
 
         slideReject: function() {
-          resetBoard(X, Y, "")
+          const history = FlexEngineJs.getBoard(X, Y, "", "")
+          window.localStorage.setItem(X + 'x' + Y, history)
+          resetBoard(X, Y, history)
         },
 
         doubleTap: function() {
           if (flexApp.canResetFlag) {
-            resetBoard(X, Y, "")
+            const history = FlexEngineJs.getBoard(X, Y, "", "")
+            window.localStorage.setItem(X + 'x' + Y, history)
+            resetBoard(X, Y, history)
           }
         }
       })
