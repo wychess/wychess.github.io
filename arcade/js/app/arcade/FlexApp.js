@@ -7,7 +7,7 @@ function bind_bestmove(x, y) {
 }
 
 class FlexApp {
-    constructor(wrapDom, flexDom, X, Y, fensCsv, config) {
+    constructor(staleDom, wrapDom, flexDom, X, Y, fensCsv, config) {
         const defaultConfig = {
             onHumanMoveRegistered: this.onHumanMoveRegistered.bind(this),
             onEngineMoveRegistered: this.onEngineMoveRegistered.bind(this)
@@ -17,6 +17,7 @@ class FlexApp {
         this.X = X
         this.Y = Y
 
+        this.staleDom = staleDom
         this.wrapDom = wrapDom
         this.markPlay()
         this.flexBoard = new FlexBoard(flexDom, X, Y, this.config)
@@ -46,6 +47,13 @@ class FlexApp {
         this.canResetFlag = true
         this.flexBoard.hideLoader()
         document.body.style.backgroundColor = ACCENT
+        this.staleDom.style.visibility = "hidden";
+    }
+
+    markPat() {
+        this.canResetFlag = true
+        this.flexBoard.hideLoader()
+        this.staleDom.style.visibility = "visible";
     }
 
     markEnd() {
@@ -53,10 +61,12 @@ class FlexApp {
         this.flexBoard.disableMoves()
         this.flexBoard.hideLoader()
         document.body.style.backgroundColor = FRAME
+        this.staleDom.style.visibility = "hidden";
     }
 
     markPlay() {
         document.body.style.backgroundColor = WHITE
+        this.staleDom.style.visibility = "hidden";
     }
 
     insufficientMaterial(fen) {
@@ -101,8 +111,13 @@ class FlexApp {
         this.flexfen = FlexEngineJs.getBoardAfter(this.X, this.Y, "AUTO", this.flexfen + '#' + key0 + key1)
 
         const status = FlexEngineJs.getStatus(this.X, this.Y, "AUTO", this.flexfen)
-        if (status == "CHECKMATE" || status == "STALEMATE") {
+        if (status == "CHECKMATE") {
             this.markWin()
+            return
+        }
+
+        if (status == "STALEMATE") {
+            this.markPat()
             return
         }
 
@@ -122,8 +137,13 @@ class FlexApp {
         this.flexfen = FlexEngineJs.getBoardAfter(this.X, this.Y, "AUTO", this.flexfen + '#' + key0 + key1)
 
         const status = FlexEngineJs.getStatus(this.X, this.Y, "AUTO", this.flexfen)
-        if (status == "CHECKMATE" || status == "STALEMATE") {
+        if (status == "CHECKMATE") {
             this.markEnd()
+            return
+        }
+
+        if (status == "STALEMATE") {
+            this.markPat()
             return
         }
 
@@ -157,7 +177,7 @@ class FlexApp {
         } else if (m[0] === 'CHECKMATE') {
             this.markWin()
         } else if (m[0] === 'STALEMATE') {
-            this.markWin()
+            this.markPat()
         } else if (m[0] === 'RESIGN') {
             this.markWin()
         }

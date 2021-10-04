@@ -28,8 +28,7 @@
     let flexApp = null
     let flexGest = null
 
-    const wychess_host = 'https://wychess.github.io'
-    const flex_host = wychess_host + '/arcade'
+    const flex_host = 'http://localhost:8000'
 
     const ActivityJs = {
       setHistory: function(x, y, history) {
@@ -53,10 +52,11 @@
     }
 
     function resetBoard(X, Y, history) {
+      let staleDom = document.getElementById("stale")
       let wrapDom = document.getElementById("wrap")
       let flexDom = document.getElementById("flex")
       flexDom.innerHTML = ''
-      flexApp = new FlexApp(wrapDom, flexDom, X, Y, history, {
+      flexApp = new FlexApp(stale, wrapDom, flexDom, X, Y, history, {
         marginPercent: 15,
       })
 
@@ -134,7 +134,8 @@
 </head>
 
 <body onload="bootstrap();">
-  <div id="wrap" style="position: absolute; width: 100%; height: 100%; opacity: 0; z-index: 1;"></div>
+  <div id="stale" style="position: absolute; width: 100%; height: 100%;"></div>
+  <div id="wrap" style="position: absolute; width: 100%; height: 100%; z-index: 1;"></div>
   <div id="flex" style="position: absolute; width: 100%; height: 100%;"></div>
   <div id="extra" style="position: fixed; left: 0; bottom: 0; z-index: 2;"></div>
 </body>
