@@ -20,6 +20,6 @@ body {
 
 #stale {
     background-image: linear-gradient(135deg, #f1bd5c 30%, #404040 30%, #404040 50%, #f1bd5c 50%, #f1bd5c 80%, #404040 80%, #404040 100%);
-    background-size: 150.00px 150.00px;
+    background-size: 300.00px 300.00px;
     visibility: hidden;
 }
