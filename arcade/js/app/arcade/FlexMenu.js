@@ -12,7 +12,8 @@ class FlexMenu {
                 ActivityJs.changeResolution(x, y)
             },
             'touchMenu': true,
-            'marginPercent': 7
+            'marginPercent': 7,
+            'cogCallback': null
         }
         this.config = {...defaultConfig, ...config}
 

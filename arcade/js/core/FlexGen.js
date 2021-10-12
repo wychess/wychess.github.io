@@ -58,8 +58,20 @@ const FlexGen = function() {
         return fenBase + fenAppendDefault
     }
 
+    const whitePointInArcadeMode = function(setup_name) {
+        if (setup_name == "ARCADE_HARD") {
+            return 3
+        } else if (setup_name == "ARCADE_NORM") {
+            return 4
+        } else if  (setup_name == "ARCADE_EASY") {
+            return 5
+        } else {
+            return 5
+        }
+    }
+
     return function(X, Y) {
-        const W_PTS = X * 5
+        const W_PTS = X * whitePointInArcadeMode(CONFIG.SETUP)
         const B_PTS = X * 3
 
         const whites = reroll_side(W_PTS, X)

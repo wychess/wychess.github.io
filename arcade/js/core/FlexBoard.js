@@ -9,7 +9,8 @@ function restyle(dom, width, height, left, top) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class GenericLayer {
-    constructor(dom, X, Y, zIndex) {
+    constructor(flexBoard, dom, X, Y, zIndex) {
+        this.flexBoard = flexBoard
         this.X = X
         this.Y = Y
         this.squares = {}
@@ -36,7 +37,11 @@ class GenericLayer {
         restyle(this.layerDom, width, height, left, top)
         let that = this
         FOR_EACH_KEY(this.X, this.Y, function (xz, yz, key) {
-            restyle(that.squares[key], squareSize, squareSize, (xz * squareSize), ((that.Y - yz - 1) * squareSize))
+            if (that.flexBoard.config.playAs == "WHITE") {
+                restyle(that.squares[key], squareSize, squareSize, (xz * squareSize), ((that.Y - yz - 1) * squareSize))
+            } else {
+                restyle(that.squares[key], squareSize, squareSize, ((that.X - xz - 1) * squareSize), (yz * squareSize))
+            }
         })
     }
 
@@ -78,7 +83,7 @@ class MoveLayer {
             'viewBox': "0 0 " + (100 * this.X) + " " + (100 * this.Y),
             'style': 'position: absolute; pointer-events: none; z-index: ' + zIndex
         })
-        this.source = div({style: "position: absolute; background-color: " + ACCENT + "; visibility: hidden; z-index: " + zIndex})
+        this.source = div({style: "position: absolute; background-color: " + CONFIG.THEME.ACCENT + "; visibility: hidden; z-index: " + zIndex})
     }
 
     onResize(width, height, left, top, size) {
@@ -87,6 +92,10 @@ class MoveLayer {
     }
 
     doBorderDot(xz, yz, outerColor, innerColor) {
+        if (this.flexBoard.config.playAs != "WHITE") {
+            xz = this.X - 1 - xz
+            yz = this.Y - 1 - yz
+        }
         const sx = 100 * (xz + 0.5)
         const sy = 100 * (this.Y - yz - 0.5)
         let outer = circle(sx, sy, outerColor, 20)
@@ -97,32 +106,44 @@ class MoveLayer {
     }
 
     doDot(xz, yz, color) {
+        if (this.flexBoard.config.playAs != "WHITE") {
+            xz = this.X - 1 - xz
+            yz = this.Y - 1 - yz
+        }
         const sx = 100 * (xz + 0.5)
         const sy = 100 * (this.Y - yz - 0.5)
         this.layerDom.appendChild(circle(sx, sy, color, 20))
     }
 
     doDotKey(key, color) {
-        this.doBorderDot(ALPHABET.indexOf(key.split('')[0]), parseInt(key.split('')[1]) - 1, DOT_HINT_OUTER, color)
+        this.doBorderDot(FILE_INDEX(key), RANK_INDEX(key), CONFIG.THEME.DOT_HINT_OUTER, color)
     }
 
     doMenuDot(xz, yz) {
-        return this.doBorderDot(xz, yz, DOT_MENU_OUTER, DOT_MENU_INNER_NORM)
+        return this.doBorderDot(xz, yz, CONFIG.THEME.DOT_MENU_OUTER, CONFIG.THEME.DOT_MENU_INNER_NORM)
     }
 
     doCap(xz, yz, color) {
+        if (this.flexBoard.config.playAs != "WHITE") {
+            xz = this.X - 1 - xz
+            yz = this.Y - 1 - yz
+        }
         const sx = 100 * (xz + 0.5)
         const sy = 100 * (this.Y - yz - 0.5)
         this.layerDom.appendChild(circle(sx, sy, color, 50))
     }
 
     doCapKey(key, color) {
-        this.doCap(ALPHABET.indexOf(key.split('')[0]), parseInt(key.split('')[1]) - 1, color)
+        this.doCap(FILE_INDEX(key), RANK_INDEX(key), color)
     }
 
     doBox(key, color) {
         let xz = FILE_INDEX(key)
         let yz = this.Y - 1 - RANK_INDEX(key)
+        if (this.flexBoard.config.playAs != "WHITE") {
+            xz = this.X - 1 - xz
+            yz = this.Y - 1 - yz
+        }
         this.layerDom.appendChild(box(xz * 100, yz*100, (xz+1) * 100, (yz+1) * 100, color))
     }
 
@@ -132,7 +153,7 @@ class MoveLayer {
     }
 
     showMovesFrom(key, hints) {
-        return this.showColorMovesFrom(key, hints, DOT_HINT_INNER, CAP_HINT)
+        return this.showColorMovesFrom(key, hints, CONFIG.THEME.DOT_HINT_INNER, CONFIG.THEME.CAP_HINT)
     }
 
     showColorMovesFrom(key, hints, dotColor, capColor) {
@@ -230,7 +251,11 @@ class ChessLayer {
         const file_index = Math.floor(this.boardPointerX / this.squareSize)
         const rank_index = this.Y - 1 - Math.floor(this.boardPointerY / this.squareSize)
         if ((file_index >= 0) && (file_index < this.X) && (rank_index >= 0) && (rank_index < this.Y)) {
-            return KEY(file_index, rank_index)
+            if (this.flexBoard.config.playAs == "WHITE") {
+                return KEY(file_index, rank_index)
+            } else {
+                return KEY(this.X - 1 - file_index, this.Y - 1 - rank_index)
+            }
         } else {
             return null
         }
@@ -273,7 +298,7 @@ class ChessLayer {
     markTargetIfAcceptable(key) {
         this.flexBoard.dropLayer.clear()
         if (this.acceptTarget(key)) {
-            this.flexBoard.dropLayer.show(key, ACCENT)
+            this.flexBoard.dropLayer.show(key, CONFIG.THEME.ACCENT)
         }
     }
 
@@ -480,7 +505,11 @@ class ChessLayer {
         let that = this
         FOR_EACH_KEY(this.X, this.Y, function (xz, yz, key) {
             let squareSize = that.squareSize
-            restyle(that.squareWraps[key], squareSize, squareSize, (xz * squareSize), ((that.Y - yz - 1) * squareSize))
+            if (that.flexBoard.config.playAs == "WHITE") {
+                restyle(that.squareWraps[key], squareSize, squareSize, (xz * squareSize), ((that.Y - yz - 1) * squareSize))
+            } else {
+                restyle(that.squareWraps[key], squareSize, squareSize, ((that.X - 1 - xz) * squareSize), (yz * squareSize))
+            }
         })
     }
 
@@ -492,7 +521,7 @@ class ChessLayer {
         const piece = (isUpper(pieceSymbol)) ? ('w' + pieceSymbol) : ('b' + toUpper(pieceSymbol))
 
         let pieceDom = img({
-            src: 'img/chesspieces/staunty/' + piece + '.png',
+            src: CONFIG.THEME.PIECES + piece + '.svg',
             style: 'position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: ' + this.zIndex + '; opacity: ' + opacity
         })
 
@@ -633,7 +662,7 @@ class MenuLayer {
         this.frameDom.style.height = (this.Y * this.squareSize + 2 * this.frameThickness) + 'px'
 
         this.flexBoard.dropLayer.clear()
-        this.flexBoard.dropLayer.show(this.selectedKey, ACCENT)
+        this.flexBoard.dropLayer.show(this.selectedKey, CONFIG.THEME.ACCENT)
     }
 
     isValid(x, y) {
@@ -659,14 +688,21 @@ class MenuLayer {
     onSquareOver(xz, yz, key) {
         this.X = xz + 1
         this.Y = yz + 1
-        this.dots[this.selectedKey].setAttribute('fill', DOT_MENU_INNER_NORM)
+        this.dots[this.selectedKey].setAttribute('fill', CONFIG.THEME.DOT_MENU_INNER_NORM)
         this.selectedKey = key
-        this.dots[this.selectedKey].setAttribute('fill', DOT_MENU_INNER_PICK)
+        this.dots[this.selectedKey].setAttribute('fill', CONFIG.THEME.DOT_MENU_INNER_PICK)
         this.reframe()
     }
 
     createDom(zIndex) {
         this.layerDom = div({style: "position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: " + zIndex})
+        if (this.flexBoard.config.cogCallback != null) {
+            this.cogDom = img({src: 'img/wychess_options_head.svg'})
+            this.cogDom.style.position = 'absolute'
+            this.cogDom.style.zIndex = zIndex + 1
+            this.cogDom.addEventListener('click', this.flexBoard.config.cogCallback)
+            this.layerDom.appendChild(this.cogDom)
+        }
         let that = this
         FOR_EACH_KEY(this.MAX_X, this.MAX_Y, function (xz, yz, key) {
             let squareWrap = div()
@@ -694,7 +730,7 @@ class MenuLayer {
             }
         })
         this.frameDom = div({style: "position: absolute; pointer-events: none; bottom: 0; left: 0; z-index: " + (2 * zIndex)})
-        this.frameDom.style.border = '3px solid ' + FRAME
+        this.frameDom.style.border = '3px solid ' + CONFIG.THEME.FRAME
     }
 
     onResize(width, height, left, top, squareSize, frameThickness) {
@@ -707,6 +743,14 @@ class MenuLayer {
         this.top = top
         this.squareSize = squareSize
         this.frameThickness = frameThickness
+        if (this.flexBoard.config.cogCallback != null) {
+            const cogSize = squareSize / 4 * 3
+            const cogMargin = squareSize / 8
+            this.cogDom.style.left = cogMargin + "px"
+            this.cogDom.style.bottom = cogMargin + "px"
+            this.cogDom.style.width = cogSize + 'px'
+            this.cogDom.style.height = cogSize + 'px'
+        }
         this.reframe()
     }
 }
@@ -737,8 +781,13 @@ class HintLayer {
         const captureSize = this.squareSize / 3
         dom.style.width = captureSize + 'px'
         dom.style.height = captureSize + 'px'
-        dom.style.left = (((FILE_INDEX(key) + 1) * this.squareSize - captureSize)) + 'px'
-        dom.style.top = ((this.Y - 1 - RANK_INDEX(key)) * this.squareSize) + 'px'
+        if (this.flexBoard.config.playAs == "WHITE") {
+            dom.style.left = (((FILE_INDEX(key) + 1) * this.squareSize - captureSize)) + 'px'
+            dom.style.top = ((this.Y - 1 - RANK_INDEX(key)) * this.squareSize) + 'px'
+        } else {
+            dom.style.left = (((this.X - FILE_INDEX(key)) * this.squareSize - captureSize)) + 'px'
+            dom.style.top = (RANK_INDEX(key) * this.squareSize) + 'px'
+        }
     }
 
     onResize(width, height, left, top, squareSize, frame) {
@@ -759,7 +808,7 @@ class HintLayer {
     capture(key, pieceSymbol) {
         const piece = (isUpper(pieceSymbol)) ? ('w' + pieceSymbol) : ('b' + toUpper(pieceSymbol))
         let pieceDom = img({
-            src: 'img/chesspieces/staunty/' + piece + '.png',
+            src: CONFIG.THEME.PIECES + piece + '.svg',
             style: 'position: absolute; pointer-events: none;'
         })
         this.layerDom.appendChild(pieceDom)
@@ -776,13 +825,99 @@ class HintLayer {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class CoordLayer {
+    constructor(flexBoard, dom, X, Y, zIndex) {
+        this.flexBoard = flexBoard
+
+        this.X = X
+        this.Y = Y
+        this.XZ = X - 1
+        this.YZ = Y - 1
+
+        this.zIndex = zIndex
+
+        this.ranks = {}
+        this.files = {}
+
+        this.createDom(this.zIndex)
+        dom.appendChild(this.layerDom)
+    }
+
+    createDom(zIndex) {
+        this.layerDom = div({style: "position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: " + zIndex})
+        let that = this
+
+        if (CONFIG.LABEL == 'WITH_COORDS') {
+            FOR_EACH_FILE(this.X, 0, function (xz, yz, key) {
+                let fileDom = $$(div(), $$(svg({style: "position: absolute", width: "100%", height: "100%", viewBox: "0 0 100 100"}), text(ALPHABET[xz].toUpperCase(), {x: "25", y: "85", "font-size": "80", fill: CONFIG.THEME.COORDS})))
+                fileDom.style.position = 'absolute'
+                fileDom.style.zIndex = zIndex
+                that.layerDom.appendChild(fileDom)
+                that.files[key] = fileDom
+            })
+
+            FOR_EACH_RANK(this.XZ, this.Y, function (xz, yz, key) {
+                let rankDom = $$(div(), $$(svg({style: "position: absolute", width: "100%", height: "100%", viewBox: "0 0 100 100"}), text(yz + 1, {x: ((yz < 9) ? "30" : "5"), y: "80", "font-size": "75", fill: CONFIG.THEME.COORDS})))
+                rankDom.style.position = 'absolute'
+                rankDom.style.zIndex = zIndex
+                that.layerDom.appendChild(rankDom)
+                that.ranks[key] = rankDom
+            })
+        }
+    }
+
+    restyleCoordFile(key, dom) {
+        const coordSize = this.squareSize / 5
+        dom.style.width = coordSize + 'px'
+        dom.style.height = coordSize + 'px'
+        dom.style.bottom = '0px'
+        if (this.flexBoard.config.playAs == "WHITE") {
+            dom.style.left = (FILE_INDEX(key) * this.squareSize) + 'px'
+        } else {
+            dom.style.left = ((this.X - 1 - FILE_INDEX(key)) * this.squareSize) + 'px'
+        }
+    }
+
+  restyleCoordRank(key, dom) {
+        const coordSize = this.squareSize / 5
+        dom.style.width = coordSize + 'px'
+        dom.style.height = coordSize + 'px'
+        dom.style.right = '0px'
+        if (this.flexBoard.config.playAs == "WHITE") {
+            dom.style.top = ((this.Y - 1 - RANK_INDEX(key)) * this.squareSize) + 'px'
+        } else {
+            dom.style.top = ((RANK_INDEX(key)) * this.squareSize) + 'px'
+        }
+    }
+
+
+    onResize(width, height, left, top, squareSize, frame) {
+        restyle(this.layerDom, width, height, left, top)
+        this.left = left + frame
+        this.top = top + frame
+        this.squareSize = squareSize
+        if (CONFIG.LABEL == 'WITH_COORDS') {
+            for (let key in this.files) {
+                this.restyleCoordFile(key, this.files[key])
+            }
+            for (let key in this.ranks) {
+                this.restyleCoordRank(key, this.ranks[key])
+            }
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class FlexBoard {
     constructor(flexDom, X, Y, config) {
         const defaultConfig = {
           onPositionRegistered: this.defaultOnPositionRegistered.bind(this),
           onHumanMoveRegistered: this.defaultOnHumanMoveRegistered.bind(this),
           onEngineMoveRegistered: this.defaultOnEngineMoveRegistered.bind(this),
-          marginPercent: 7
+          marginPercent: 7,
+          playAs: "WHITE"
         }
         this.config = {...defaultConfig, ...config}
 
@@ -807,11 +942,13 @@ class FlexBoard {
         this.notifyDom = this.createNotifyDom()
         this.outerDom.appendChild(this.notifyDom)
 
-        this.dropLayer = new GenericLayer(this.innerDom, X, Y, 100)
-        this.lastLayer = new GenericLayer(this.innerDom, X, Y, 200)
+        this.coordLayer = new CoordLayer(this, this.innerDom, X, Y, 1)
+        this.dropLayer = new GenericLayer(this, this.innerDom, X, Y, 100)
+        this.lastLayer = new GenericLayer(this, this.innerDom, X, Y, 200)
         this.moveLayer = new MoveLayer(this, this.innerDom, X, Y, 300)
         this.hintLayer = new HintLayer(this, this.innerDom, X, Y, 400)
 
+        this.innerDom.appendChild(this.coordLayer.layerDom)
         this.innerDom.appendChild(this.dropLayer.layerDom)
         this.innerDom.appendChild(this.lastLayer.layerDom)
         this.innerDom.appendChild(this.moveLayer.layerDom)
@@ -879,7 +1016,7 @@ class FlexBoard {
         boardDom.style.position = 'absolute'
         boardDom.style.top = '0px'
         boardDom.style.left = '0px'
-        boardDom.style.border = '3px solid ' + FRAME
+        boardDom.style.border = '3px solid ' + CONFIG.THEME.FRAME
         let that = this
         this.forEachSquare(function (xz, yz, key) {
             let squareDom = div({style: "z-index: 1"})
@@ -888,9 +1025,9 @@ class FlexBoard {
             boardDom.append(squareDom)
             let isWhite = (xz + that.Y - yz) % 2 === 1
             if (isWhite) {
-                squareDom.style.backgroundColor = WHITE
+                squareDom.style.backgroundColor = CONFIG.THEME.WHITE
             } else {
-                squareDom.style.backgroundColor = BLACK
+                squareDom.style.backgroundColor = CONFIG.THEME.BLACK
             }
         })
         return boardDom
@@ -898,8 +1035,8 @@ class FlexBoard {
 
     createLoaderDom() {
         return $$(div({style: 'position: absolute; visibility: hidden;'}),
-          img({src: 'img/loader.png', style: "position: absolute; width: 100%; height: 100%;"}),
-          img({src: 'img/loader.gif', style: "position: absolute; width: 66%; height: 66%; left: 17%; top: 17%;"}),
+          img({src: CONFIG.THEME.LOADER_BACK, style: "position: absolute; width: 100%; height: 100%;"}),
+          img({src: CONFIG.THEME.LOADER_SPIN, style: "position: absolute; width: 66%; height: 66%; left: 17%; top: 17%;"}),
         )
     }
 
@@ -909,8 +1046,8 @@ class FlexBoard {
             "background-color: white;" +
             "visibility: hidden;" +
             "text-align: center;" +
-            "border: 3px " + FRAME + " solid;" +
-            "color: " + FRAME + ";"})
+            "border: 3px " + CONFIG.THEME.FRAME + " solid;" +
+            "color: " + CONFIG.THEME.FRAME + ";"})
     }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1014,6 +1151,8 @@ class FlexBoard {
             restyle(that.squares[key], squareSize, squareSize, (xz * squareSize), ((that.Y - yz - 1) * squareSize))
         })
 
+        this.coordLayer.onResize(this.boardWidth, this.boardHeight,
+            frame + this.leftMargin, frame + this.topMargin, this.squareSize)
         this.dropLayer.onResize(this.boardWidth, this.boardHeight,
             frame + this.leftMargin, frame + this.topMargin, this.squareSize)
         this.lastLayer.onResize(this.boardWidth, this.boardHeight,
@@ -1134,7 +1273,7 @@ class FlexBoard {
         this.chessLayer.animate(key0, key1)
         this.hintLayer.capture(key1, this.pieces[keyPasse])
 
-        this.lastLayer.highlight([key0, key1, keyPasse], LAST)
+        this.lastLayer.highlight([key0, key1, keyPasse], CONFIG.THEME.LAST)
 
         this.pieces[key1] = this.pieces[key0]
         delete this.pieces[key0]
@@ -1147,7 +1286,7 @@ class FlexBoard {
         this.chessLayer.show(keyKing, this.pieces[key0])
         this.chessLayer.show(keyRook, this.pieces[key1])
 
-        this.lastLayer.highlight([key0, key1, keyKing, keyRook], LAST)
+        this.lastLayer.highlight([key0, key1, keyKing, keyRook], CONFIG.THEME.LAST)
 
         const pKing = this.pieces[key0]
         const pRook = this.pieces[key1]
@@ -1164,7 +1303,7 @@ class FlexBoard {
             this.hintLayer.capture(keyPromoted, p1)
         }
 
-        this.lastLayer.highlight([key0, keyPromoted], LAST)
+        this.lastLayer.highlight([key0, keyPromoted], CONFIG.THEME.LAST)
 
         delete this.pieces[key0]
         this.pieces[keyPromoted] = pPromoted
@@ -1176,7 +1315,7 @@ class FlexBoard {
             this.hintLayer.capture(key1, p1)
         }
 
-        this.lastLayer.highlight([key0, key1], LAST)
+        this.lastLayer.highlight([key0, key1], CONFIG.THEME.LAST)
 
         this.pieces[key1] = this.pieces[key0]
         delete this.pieces[key0]
@@ -1285,7 +1424,7 @@ class FlexBoard {
     }
 
     highlight(key0, key1) {
-        this.lastLayer.highlight([key0, key1], LAST)
+        this.lastLayer.highlight([key0, key1], CONFIG.THEME.LAST)
     }
 
     highlightMove(move) {

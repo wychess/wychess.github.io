@@ -11,8 +11,16 @@ const FULL = 6
 const SIDE_WHITE = 1
 const SIDE_BLACK = 0
 
+function GET_SIDE(flexfen) {
+    return flexfen.split(' ')[1].toUpperCase() == "W" ? "WHITE" : "BLACK"
+}
+
+function HEX(i) {
+    return Math.floor(i).toString(16)
+}
+
 function KEY(xz, yz) {
-    return ALPHABET[xz] + Math.floor(yz + 1).toString()
+    return ALPHABET[xz] + Math.floor(yz + 1).toString(16)
 }
 
 function UCI_KEY0(move) {
@@ -36,7 +44,7 @@ function FILE(key) {
 }
 
 function RANK(key) {
-    return parseInt(key.split('')[1])
+    return parseInt(key.split('')[1], 16)
 }
 
 function FILE_INDEX(key) {
@@ -58,6 +66,7 @@ function REVERSE(s){
 function FLIP_CASE(letter) {
     return (letter === letter.toUpperCase()) ? letter.toLowerCase() : letter.toUpperCase()
 }
+
 function FLIP_TEXT(text) {
     return text.split('').map(
         letter => FLIP_CASE(letter)
@@ -127,6 +136,18 @@ function FOR_EACH_KEY(X, Y, onSquare) {
         for (let yz = 0; yz < Y; yz++) {
             onSquare(xz, yz, KEY(xz, yz))
         }
+    }
+}
+
+function FOR_EACH_FILE(X, yz, onSquare) {
+    for (let xz = 0; xz < X; xz++) {
+        onSquare(xz, yz, KEY(xz, yz))
+    }
+}
+
+function FOR_EACH_RANK(xz, Y, onSquare) {
+    for (let yz = 0; yz < Y; yz++) {
+        onSquare(xz, yz, KEY(xz, yz))
     }
 }
 

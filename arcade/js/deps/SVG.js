@@ -10,6 +10,8 @@ function $SVG(elementName, elementAttributes={}) {
         }
         dom.setAttribute(attributeIndex, elementAttributes[attributeIndex]);
     }
+    dom.setAttribute('xmlns', "http://www.w3.org/2000/svg");
+    dom.setAttribute('xmlns:link', "http://www.w3.org/1999/xlink");
     return dom;
 }
 
@@ -56,4 +58,8 @@ function path(pts, color, size) {
         'stroke': color,
         'fill': color
     })
+}
+
+function text(content, attrs) {
+    return $$$($SVG('text', attrs), content)
 }

@@ -40,13 +40,18 @@ class FlexApp {
         this.pliesSinceLastCapture = 0
         this.repetitionLookup = {}
 
-        this.flexTBL.write(this.flexfen)
+        if (this.config.playAs == GET_SIDE(this.flexfen)) {
+            this.flexTBL.write(this.flexfen)
+        } else {
+            this.flexBoard.showLoader()
+            this.flexUCI.write(this.flexfen, 100)
+        }
     }
 
     markWin() {
         this.canResetFlag = true
         this.flexBoard.hideLoader()
-        document.body.style.backgroundColor = ACCENT
+        document.body.style.backgroundColor = CONFIG.THEME.WIN
         this.staleDom.style.visibility = "hidden";
     }
 
@@ -60,12 +65,12 @@ class FlexApp {
         this.canResetFlag = true
         this.flexBoard.disableMoves()
         this.flexBoard.hideLoader()
-        document.body.style.backgroundColor = FRAME
+        document.body.style.backgroundColor = CONFIG.THEME.ECHEC
         this.staleDom.style.visibility = "hidden";
     }
 
     markPlay() {
-        document.body.style.backgroundColor = WHITE
+        document.body.style.backgroundColor = CONFIG.THEME.TABLE
         this.staleDom.style.visibility = "hidden";
     }
 
@@ -136,6 +141,10 @@ class FlexApp {
 
         this.flexfen = FlexEngineJs.getBoardAfter(this.X, this.Y, "AUTO", this.flexfen + '#' + key0 + key1)
 
+        this.history.push(this.flexfen)
+
+        ActivityJs.setHistory(this.X, this.Y, this.history.join(';'))
+
         const status = FlexEngineJs.getStatus(this.X, this.Y, "AUTO", this.flexfen)
         if (status == "CHECKMATE") {
             this.markEnd()
@@ -151,10 +160,6 @@ class FlexApp {
             this.markEnd()
             return
         }
-
-        this.history.push(this.flexfen)
-
-        ActivityJs.setHistory(this.X, this.Y, this.history.join(';'))
 
         this.flexTBL.write(this.flexfen)
     }
@@ -184,7 +189,11 @@ class FlexApp {
     }
 
     canTakeBack() {
-        return this.history.length > 1
+        if (this.config.playAs == "WHITE") {
+            return this.history.length > 1
+        } else {
+            return this.history.length > 2
+        }
     }
 
     takeBack() {

@@ -6,13 +6,31 @@
   <link rel="shortcut icon" href="img/wychess_arcade_square.png" type="image/x-icon" />
 
   <link rel="stylesheet" href="css/FlexStyle.css">
+  <link rel="stylesheet" href="css/gustav/FlexStyle.css">
+  <link rel="stylesheet" href="css/light/FlexStyle.css">
+  <link rel="stylesheet" href="css/night/FlexStyle.css">
   <script src="css/FlexWyCss.js"></script>
-
-  <script src="js/wasm/FlexEngine.js"></script>
+  <script src="css/gustav/FlexWyCss.js"></script>
+  <script src="css/light/FlexWyCss.js"></script>
+  <script src="css/night/FlexWyCss.js"></script>
 
   <script src="js/deps/HTML.js"></script>
   <script src="js/deps/SVG.js"></script>
   <script src="js/deps/JavaScript.js"></script>
+
+  <script src="getapk.js"></script>
+
+  <script>
+    let flexMenu = null
+    window.THEME_NAME = window.localStorage.getItem('THEME_NAME') || 'LIGHT'
+    window.CONFIG = {
+      'MAX_XY': parseInt(window.localStorage.getItem('MAX_XY')) || 8,
+      'THEME': ((window.THEME_NAME == 'LIGHT') ? LIGHT : (window.THEME_NAME == 'NIGHT') ? NIGHT : GUSTAV),
+      'LABEL': window.localStorage.getItem('LABEL') || 'NO_COORDS',
+      'SETUP': window.localStorage.getItem('SETUP') || 'ARCADE_KING_ON_CENTER_EASY',
+      'PLAY_AS': window.localStorage.getItem('PLAY_AS') || 'WHITE'
+    }
+  </script>
 
   <script src="js/core/FlexTouch.js"></script>
   <script src="js/core/FlexBoard.js"></script>
@@ -21,13 +39,11 @@
   <script src="js/app/arcade/FlexMenu.js"></script>
 
   <script>
-    let flexMenu = null
-
     const flex_host = 'https://wychess.github.io/arcade'
 
     const ActivityJs = {
       startActivityIntent: function(x, y) {
-        document.location = flex_host + '/play.html?X=' + x + '&Y=' + y
+        document.location = flex_host + '/play.html?X=' + HEX(x) + '&Y=' + HEX(y)
       },
       changeResolution: function(x, y) {
         localStorage.setItem('X', x)
@@ -43,15 +59,72 @@
       })
     }
 
+    function restoreSelects() {
+      document.getElementById('MAX_XY').value = CONFIG.MAX_XY
+      document.getElementById('THEME_NAME').value = window.THEME_NAME
+      document.getElementById('LABEL').value = CONFIG.LABEL
+      document.getElementById('SETUP').value = CONFIG.SETUP
+      document.getElementById('PLAY_AS').value = CONFIG.PLAY_AS
+    }
+
     function bootstrap() {
-       const X = window.localStorage.getItem('X') || 6
-       const Y = window.localStorage.getItem('Y') || 6
-       doBootstrap(X, Y, 3, 5, 8, 8)
+       restoreSelects()
+       document.body.style.backgroundColor = CONFIG.THEME.TABLE
+       const X = Math.min(parseInt(window.localStorage.getItem('X')) || 6, CONFIG.MAX_XY)
+       const Y = Math.min(parseInt(window.localStorage.getItem('Y')) || 6, CONFIG.MAX_XY)
+       doBootstrap(X, Y, 3, 5, CONFIG.MAX_XY, CONFIG.MAX_XY)
+    }
+
+    function onChangeKey(select, key, reload, clear) {
+      localStorage.setItem(key, select.value)
+      if (clear) {
+        for (let x = 3; x <= 12; x++) {
+          for (let y = 5; y <= 12; y++) {
+            window.localStorage.removeItem(x + 'x' + y)
+          }
+        }
+      }
+      if (reload) {
+        document.location = flex_host + '/index.html'
+      } else {
+        window.CONFIG.key = select.value
+      }
     }
   </script>
 </head>
 
 <body onload="bootstrap();">
   <div id="flex" style="position: absolute; width: 100%; height: 100%;"></div>
+  <div id="extra" style="position: fixed; left: 0; bottom: 0; z-index: 2;">
+    <select id="MAX_XY" style="margin: 10px;" onchange="onChangeKey(this, 'MAX_XY', true, false)">
+      <option value="8">8</option>
+      <option value="9">9</option>
+      <option value="10">10</option>
+    </select>
+    <select id="THEME_NAME" style="margin: 10px;" onchange="onChangeKey(this, 'THEME_NAME', true, false)">
+      <option value="LIGHT">Light</option>
+      <option value="NIGHT">Night</option>
+      <option value="GUSTAV">Gustav</option>
+    </select>
+    <select id="LABEL" style="margin: 10px;" onchange="onChangeKey(this, 'LABEL', true, false)">
+      <option value="NO_COORDS">No Coords</option>
+      <option value="WITH_COORDS">With Coords</option>
+    </select>
+    <select id="SETUP" style="margin: 10px;" onchange="onChangeKey(this, 'SETUP', false, true)">
+      <option value="ARCADE_KING_ON_CENTER_EASY">Arcade Easy</option>
+      <option value="ARCADE_KING_ON_CENTER_NORM">Arcade Normal</option>
+      <option value="ARCADE_KING_ON_CENTER_HARD">Arcade Hard</option>
+      <option value="FISHER_RANDOM">Fisher Random</option>
+      <option value="FISHER_FLIPPED">Fisher Flipped</option>
+      <option value="FISHER_MIRROR">Fisher Mirror</option>
+    </select>
+    <select id="PLAY_AS" style="margin: 10px;" onchange="onChangeKey(this, 'PLAY_AS', false, true)">
+      <option value="WHITE">Play as White</option>
+      <option value="BLACK">Play as Black</option>
+    </select>
+</div>
+<div id="extra_apk" style="position: fixed; right: 0; bottom: 0; z-index: 2;">
+  <button style="margin: 10px;" onclick="getapk()">get android apk</button>
+</div>
 </body>
 </html>

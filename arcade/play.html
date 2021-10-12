@@ -6,7 +6,13 @@
   <link rel="shortcut icon" href="img/wychess_arcade_square.png" type="image/x-icon" />
 
   <link rel="stylesheet" href="css/FlexStyle.css">
+  <link rel="stylesheet" href="css/gustav/FlexStyle.css">
+  <link rel="stylesheet" href="css/light/FlexStyle.css">
+  <link rel="stylesheet" href="css/night/FlexStyle.css">
   <script src="css/FlexWyCss.js"></script>
+  <script src="css/gustav/FlexWyCss.js"></script>
+  <script src="css/light/FlexWyCss.js"></script>
+  <script src="css/night/FlexWyCss.js"></script>
 
   <script src="js/flex/FlexWebAssembly.js"></script>
   <script src="js/flex/FlexEngine.js"></script>
@@ -14,6 +20,21 @@
   <script src="js/deps/HTML.js"></script>
   <script src="js/deps/SVG.js"></script>
   <script src="js/deps/JavaScript.js"></script>
+
+  <script src="getapk.js"></script>
+
+  <script>
+    let flexApp = null
+    let flexGest = null
+    window.THEME_NAME = window.localStorage.getItem('THEME_NAME') || 'LIGHT'
+    window.CONFIG = {
+      'MAX_XY': parseInt(window.localStorage.getItem('MAX_XY')) || 8,
+      'THEME': ((window.THEME_NAME == 'LIGHT') ? LIGHT : (window.THEME_NAME == 'NIGHT') ? NIGHT : GUSTAV),
+      'LABEL': window.localStorage.getItem('LABEL') || 'NO_COORDS',
+      'SETUP': window.localStorage.getItem('SETUP') || 'ARCADE_KING_ON_CENTER_EASY',
+      'PLAY_AS': window.localStorage.getItem('PLAY_AS') || 'WHITE'
+    }
+  </script>
 
   <script src="js/core/EmbedChannel.js"></script>
   <script src="js/core/FlexTouch.js"></script>
@@ -25,9 +46,6 @@
   <script src="js/app/arcade/FlexApp.js"></script>
 
   <script>
-    let flexApp = null
-    let flexGest = null
-
     const wychess_host = 'https://wychess.github.io'
     const flex_host = wychess_host + '/arcade'
 
@@ -39,7 +57,7 @@
 
     function getIntFromUrl(def, ind) {
       try {
-        return parseInt(unescape(location.search).split('?')[1].split('')[ind]) || def
+        return parseInt(unescape(location.search).split('?')[1].split('')[ind], 16) || def
       } catch(e) {
         return def
       }
@@ -52,13 +70,31 @@
       document.getElementById('extra').appendChild(elem)
     }
 
+    function getBoard(X, Y) {
+      if (CONFIG.SETUP.indexOf("ARCADE") !== -1) {
+        let youPoints = (CONFIG.SETUP.indexOf("EASY") !== -1) ? 5 :
+                        (CONFIG.SETUP.indexOf("NORM") !== -1) ? 4 :
+                        (CONFIG.SETUP.indexOf("HARD") !== -1) ? 3 : 5
+        let oppPoints = 3
+        if (CONFIG.PLAY_AS == "WHITE") {
+          CONFIG.SETUP = "ARCADE_KING_ON_CENTER_" + youPoints + ":" + oppPoints
+        } else {
+          CONFIG.SETUP = "ARCADE_KING_ON_CENTER_" + oppPoints + ":" + youPoints
+        }
+      }
+
+      return FlexEngineJs.getBoard(X, Y, "", CONFIG.SETUP)
+    }
+
     function resetBoard(X, Y, history) {
-      let staleDom = document.getElementById("stale")
+      let staleDom = document.getElementById(CONFIG.THEME.STALE)
       let wrapDom = document.getElementById("wrap")
       let flexDom = document.getElementById("flex")
       flexDom.innerHTML = ''
-      flexApp = new FlexApp(stale, wrapDom, flexDom, X, Y, history, {
+
+      flexApp = new FlexApp(staleDom, wrapDom, flexDom, X, Y, history, {
         marginPercent: 15,
+        playAs: CONFIG.PLAY_AS
       })
 
       flexGest = new FlexGest(wrapDom, flexApp.flexBoard.chessLayer.layerDom, {
@@ -83,14 +119,14 @@
         },
 
         slideReject: function() {
-          const history = FlexEngineJs.getBoard(X, Y, "", "")
+          const history = getBoard(X, Y)
           window.localStorage.setItem(X + 'x' + Y, history)
           resetBoard(X, Y, history)
         },
 
         doubleTap: function() {
           if (flexApp.canResetFlag) {
-            const history = FlexEngineJs.getBoard(X, Y, "", "")
+            const history = getBoard(X, Y)
             window.localStorage.setItem(X + 'x' + Y, history)
             resetBoard(X, Y, history)
           }
@@ -101,43 +137,39 @@
     function doBootstrap(X, Y) {
       OnFlexEngineJsLoaded(function() {
         document.title = 'wychess arcade ' + X + 'x' + Y
-        const history = window.localStorage.getItem(X + 'x' + Y) || FlexEngineJs.getBoard(X, Y, "", "")
+        const history = window.localStorage.getItem(X + 'x' + Y) || getBoard(X, Y)
         resetBoard(X, Y, history)
-        addExtraAction('pick size', function() {
+        addExtraAction('change setup', function() {
           document.location = flex_host + '/index.html'
         })
-        addExtraAction('reset', function() {
-          const history = FlexEngineJs.getBoard(X, Y, "", "")
+        addExtraAction('reroll board', function() {
+          const history = getBoard(X, Y)
           window.localStorage.setItem(X + 'x' + Y, history)
           resetBoard(X, Y, history)
         })
         addExtraAction('take back', function() {
           flexApp.takeBack()
         })
-        addExtraAction('get android apk', function() {
-          if (confirm("The App does not require any permissions.\n" +
-                      "It works entirely offline.\n" +
-                      "The original sha1sum of file: 60bf8204c9bcaa79a0ae1a888f7836dc1a3317da.\n" +
-                      "If you encounter any suspicious App behaviour please contact wychess@wychess.com.\n" +
-                      "Please confirm that you understand the risk of installing software from malicious sources.")) {
-            document.location = wychess_host + '/release/wychess-arcade-v1.12.apk'
-          }
-        })
       })
     }
 
     function bootstrap() {
-      const X = Math.max(3, Math.min(8, getIntFromUrl(6, 2))) // 2: "X=_&Y=8"
-      const Y = Math.max(3, Math.min(8, getIntFromUrl(6, 6))) // 6: "X=8&Y=_"
+      const X = Math.max(3, Math.min(CONFIG.MAX_XY, getIntFromUrl(6, 2))) // 2: "X=_&Y=8"
+      const Y = Math.max(3, Math.min(CONFIG.MAX_XY, getIntFromUrl(6, 6))) // 6: "X=8&Y=_"
       doBootstrap(X, Y)
     }
   </script>
 </head>
 
 <body onload="bootstrap();">
-  <div id="stale" style="position: absolute; width: 100%; height: 100%;"></div>
+  <div id="stale_gustav" style="position: absolute; width: 100%; height: 100%;"></div>
+  <div id="stale_light" style="position: absolute; width: 100%; height: 100%;"></div>
+  <div id="stale_night" style="position: absolute; width: 100%; height: 100%;"></div>
   <div id="wrap" style="position: absolute; width: 100%; height: 100%; z-index: 1;"></div>
   <div id="flex" style="position: absolute; width: 100%; height: 100%;"></div>
   <div id="extra" style="position: fixed; left: 0; bottom: 0; z-index: 2;"></div>
+  <div id="extra_apk" style="position: fixed; right: 0; bottom: 0; z-index: 2;">
+    <button style="margin: 10px;" onclick="getapk()">get android apk</button>
+  </div>
 </body>
 </html>
