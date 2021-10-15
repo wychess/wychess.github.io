@@ -19,8 +19,8 @@ class FlexApp {
 
         this.staleDom = staleDom
         this.wrapDom = wrapDom
-        this.markPlay()
         this.flexBoard = new FlexBoard(flexDom, X, Y, this.config)
+        this.markPlay()
 
         let that = this
 
@@ -71,6 +71,7 @@ class FlexApp {
 
     markPlay() {
         document.body.style.backgroundColor = CONFIG.THEME.TABLE
+        this.flexBoard.unmarkCheck()
         this.staleDom.style.visibility = "hidden";
     }
 
@@ -118,6 +119,7 @@ class FlexApp {
         const status = FlexEngineJs.getStatus(this.X, this.Y, "AUTO", this.flexfen)
         if (status == "CHECKMATE") {
             this.markWin()
+            this.flexBoard.markCheck(GET_KING(this.flexfen), false)
             return
         }
 
@@ -130,6 +132,8 @@ class FlexApp {
             this.markEnd()
             return
         }
+
+        this.markPlay()
 
         this.flexBoard.showLoader()
         this.flexUCI.write(this.flexfen, 100)
@@ -148,6 +152,7 @@ class FlexApp {
         const status = FlexEngineJs.getStatus(this.X, this.Y, "AUTO", this.flexfen)
         if (status == "CHECKMATE") {
             this.markEnd()
+            this.flexBoard.markCheck(GET_KING(this.flexfen), false)
             return
         }
 
@@ -159,6 +164,10 @@ class FlexApp {
         if (this.extraTermination(this.flexfen)) {
             this.markEnd()
             return
+        }
+
+        if (status == "CHECK") {
+            this.flexBoard.markCheck(GET_KING(this.flexfen), true)
         }
 
         this.flexTBL.write(this.flexfen)

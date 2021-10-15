@@ -7,6 +7,7 @@ const NIGHT = {
   'WIN': "#21603b",
   'ECHEC': "#42211e",
   'COORDS': "#393939",
+  'CHECK': "#b63725",
 
   get LAST() { return ALPHA(this.ACCENT, 50) },
   get ACCENT_75() { return ALPHA(this.ACCENT, 75) },

@@ -15,6 +15,20 @@ function GET_SIDE(flexfen) {
     return flexfen.split(' ')[1].toUpperCase() == "W" ? "WHITE" : "BLACK"
 }
 
+function GET_KING(flexfen) {
+    const flexfensplit = flexfen.split(' ')
+    const king = flexfensplit[1].toUpperCase() == "W" ? "K" : "k"
+    const base = flexfensplit[0]
+    const basesplit = base.split('/')
+    const Y = basesplit.length
+    const flat = FLATTEN_FEN_BASE(base)
+    const X = flat.length / Y
+    const pos = flat.indexOf(king)
+    const XZ = pos % X
+    const YZ = Y - Math.floor(pos / X) - 1
+    return KEY(XZ, YZ)
+}
+
 function HEX(i) {
     return Math.floor(i).toString(16)
 }

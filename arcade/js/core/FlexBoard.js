@@ -58,6 +58,20 @@ class GenericLayer {
         this.mark.push(key)
     }
 
+    forbid(key, color) {
+        this.squares[key].style.backgroundColor = color
+        this.squares[key].style.visibility = 'visible'
+        this.squares[key].style.transition = "0.250s"
+        this.squares[key].style.transitionFunction = "ease-out"
+        let that = this
+        setTimeout(function() {
+            that.squares[key].style.backgroundColor = 'rgba(0, 0, 0, 0)'
+        }, 250)
+        setTimeout(function() {
+            that.squares[key].style.transition = "0s"
+        }, 500)
+    }
+
     highlight(keys, color) {
         this.clear()
         keys.forEach(key => this.show(key, color))
@@ -72,6 +86,7 @@ class MoveLayer {
         this.flexBoard = flexBoard
         this.X = X
         this.Y = Y
+        this.checkKey = null
         this.createVectorDom(zIndex)
         dom.appendChild(this.layerDom)
         dom.appendChild(this.source)
@@ -147,9 +162,22 @@ class MoveLayer {
         this.layerDom.appendChild(box(xz * 100, yz*100, (xz+1) * 100, (yz+1) * 100, color))
     }
 
+    doMarkCheck(key) {
+        this.checkKey = key
+        this.doCapKey(this.checkKey, ALPHA(CONFIG.THEME.CHECK, 50))
+    }
+
+    doUnmarkCheck() {
+        this.checkKey = null
+        this.clear()
+    }
+
     clear() {
         this.layerDom.innerHTML = ''
         this.source.style.visibility = 'hidden'
+        if (this.checkKey != null) {
+            this.doCapKey(this.checkKey, ALPHA(CONFIG.THEME.CHECK, 50))
+        }
     }
 
     showMovesFrom(key, hints) {
@@ -350,11 +378,13 @@ class ChessLayer {
                     this.enableMoveFromSourceWithMouse(key, mouseEvent)
                 } else {
                     // ignore
+                    this.flexBoard.dropLayer.forbid(key, CONFIG.THEME.ECHEC)
                 }
             } else if (this.acceptSource(key)) {
                 this.enableMoveFromSourceWithMouse(key, mouseEvent)
             } else {
                 //ignore
+                this.flexBoard.dropLayer.forbid(key, CONFIG.THEME.ECHEC)
             }
         }.bind(this)
         return onMouseDown
@@ -422,11 +452,13 @@ class ChessLayer {
                     this.enableMoveFromSourceWithTouch(key, changedTouch)
                 } else {
                     // ignore
+                    this.flexBoard.dropLayer.forbid(key, CONFIG.THEME.ECHEC)
                 }
             } else if (this.acceptSource(key)) {
                 this.enableMoveFromSourceWithTouch(key, changedTouch)
             } else {
                 //ignore
+                this.flexBoard.dropLayer.forbid(key, CONFIG.THEME.ECHEC)
             }
         }.bind(this)
         return onTouchDown
@@ -698,10 +730,19 @@ class MenuLayer {
         this.layerDom = div({style: "position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: " + zIndex})
         if (this.flexBoard.config.cogCallback != null) {
             this.cogDom = img({src: 'img/wychess_options_head.svg'})
+            this.cogDom.className = "extra_button"
             this.cogDom.style.position = 'absolute'
             this.cogDom.style.zIndex = zIndex + 1
             this.cogDom.addEventListener('click', this.flexBoard.config.cogCallback)
             this.layerDom.appendChild(this.cogDom)
+        }
+        if (this.flexBoard.config.infoCallback != null) {
+            this.infoDom = img({src: 'img/wychess_info.svg'})
+            this.infoDom.className = "extra_button"
+            this.infoDom.style.position = 'absolute'
+            this.infoDom.style.zIndex = zIndex + 1
+            this.infoDom.addEventListener('click', this.flexBoard.config.infoCallback)
+            this.layerDom.appendChild(this.infoDom)
         }
         let that = this
         FOR_EACH_KEY(this.MAX_X, this.MAX_Y, function (xz, yz, key) {
@@ -750,6 +791,14 @@ class MenuLayer {
             this.cogDom.style.bottom = cogMargin + "px"
             this.cogDom.style.width = cogSize + 'px'
             this.cogDom.style.height = cogSize + 'px'
+        }
+        if (this.flexBoard.config.infoCallback != null) {
+            const infoSize = squareSize / 2
+            const infoMargin = squareSize / 4
+            this.infoDom.style.left = (squareSize + infoMargin) + "px"
+            this.infoDom.style.bottom = infoMargin + "px"
+            this.infoDom.style.width = infoSize + 'px'
+            this.infoDom.style.height = infoSize + 'px'
         }
         this.reframe()
     }
@@ -1031,6 +1080,18 @@ class FlexBoard {
             }
         })
         return boardDom
+    }
+
+    unmarkCheck() {
+        this.boardDom.style.border = '3px solid ' + CONFIG.THEME.FRAME
+        this.moveLayer.doUnmarkCheck()
+    }
+
+    markCheck(key, markFrame) {
+        this.moveLayer.doMarkCheck(key)
+        if (markFrame) {
+            this.boardDom.style.border = '3px solid ' + ALPHA(CONFIG.THEME.CHECK, 50) //CONFIG.THEME.CHECK
+        }
     }
 
     createLoaderDom() {

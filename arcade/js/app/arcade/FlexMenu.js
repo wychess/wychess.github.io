@@ -13,7 +13,8 @@ class FlexMenu {
             },
             'touchMenu': true,
             'marginPercent': 7,
-            'cogCallback': null
+            'cogCallback': null,
+            'infoCallback': null
         }
         this.config = {...defaultConfig, ...config}
 

@@ -7,6 +7,7 @@ const LIGHT = {
   get WIN() { return this.ACCENT },
   get ECHEC() { return this.FRAME },
   get COORDS() { return this.FRAME },
+  'CHECK': "#b63725",
 
   get LAST() { return ALPHA(this.ACCENT, 50, this) },
   get ACCENT_75() { return ALPHA(this.ACCENT, 75) },
