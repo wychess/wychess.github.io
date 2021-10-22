@@ -66,7 +66,7 @@
       document.body.removeChild(element);
     }
 
-    function downloadAndClearLogs() {
+    function downloadDecoratedWithFilename() {
       const filename = "wychess-arcade-logs-" + ((new Date()).toLocaleString()
       .replaceAll(',', '')
       .replaceAll('/', '_')
@@ -74,8 +74,21 @@
       .replaceAll(' ', '-')
       ) + '.txt'
       const filebody = window.localStorage.getItem("logs", "") || ""
-      window.localStorage.removeItem("logs")
       download(filename, filebody)
+    }
+
+    function clearLogs() {
+      if (confirm("Are you sure?")) {
+        window.localStorage.removeItem("logs")
+      }
+    }
+
+    function downloadWithInfo() {
+      if (confirm("All games are kept in browser's local storage.\n" +
+                  "No data is sent to any external entity.\n" +
+                  "Access logs (data such as your IP/browser agent/timestamp) may be kept by the hosting server governed by github.com.\n")) {
+        downloadDecoratedWithFilename()
+      }
     }
 
     function doBootstrap(X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y) {
@@ -150,8 +163,11 @@
       <option value="WHITE">Play as White</option>
       <option value="BLACK">Play as Black</option>
     </select>
-    <button onclick="downloadAndClearLogs()" style="margin: 10px;">
-      Download and Clear Logs
+    <button onclick="downloadWithInfo()" style="margin: 10px;">
+      Download Logs
+    </button>
+    <button onclick="clearLogs()" style="margin: 10px;">
+      Clear Logs
     </button>
 </div>
 <div id="extra_apk" style="position: fixed; right: 0; bottom: 0; z-index: 2;">

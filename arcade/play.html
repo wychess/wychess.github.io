@@ -67,7 +67,7 @@
       appendLog: function(logline) {
         let logs = window.localStorage.getItem("logs", "") || ""
         if (logs != "") logs += "\n"
-        logs += logline
+        logs += getConfigLabel() + " :: " + logline
         window.localStorage.setItem("logs", logs)
       }
     }
