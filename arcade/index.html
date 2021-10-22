@@ -27,6 +27,7 @@
       'MAX_XY': parseInt(window.localStorage.getItem('MAX_XY')) || 8,
       'THEME': ((window.THEME_NAME == 'LIGHT') ? LIGHT : (window.THEME_NAME == 'NIGHT') ? NIGHT : GUSTAV),
       'LABEL': window.localStorage.getItem('LABEL') || 'NO_COORDS',
+      'INTERFACE': 'GESTURES',
       'SETUP': window.localStorage.getItem('SETUP') || 'ARCADE_KING_ON_CENTER_EASY',
       'PLAY_AS': window.localStorage.getItem('PLAY_AS') || 'WHITE'
     }
@@ -45,17 +46,44 @@
       startActivityIntent: function(x, y) {
         document.location = flex_host + '/play.html?X=' + HEX(x) + '&Y=' + HEX(y)
       },
+
       changeResolution: function(x, y) {
         localStorage.setItem('X', x)
         localStorage.setItem('Y', y)
       }
     }
 
+    function download(filename, text) {
+      var element = document.createElement('a')
+      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+      element.setAttribute('download', filename);
+
+      element.style.display = 'none';
+      document.body.appendChild(element);
+
+      element.click();
+
+      document.body.removeChild(element);
+    }
+
+    function downloadAndClearLogs() {
+      const filename = "wychess-arcade-logs-" + ((new Date()).toLocaleString()
+      .replaceAll(',', '')
+      .replaceAll('/', '_')
+      .replaceAll(':', '_')
+      .replaceAll(' ', '-')
+      ) + '.txt'
+      const filebody = window.localStorage.getItem("logs", "") || ""
+      window.localStorage.removeItem("logs")
+      download(filename, filebody)
+    }
+
     function doBootstrap(X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y) {
       let flexDom = document.getElementById("flex")
       flexMenu = new FlexMenu(flexDom, X, Y, MIN_X, MIN_Y, MAX_X, MAX_Y, {
         touchMenu: false,
-        marginPercent: 15
+        marginPercent: 15,
+        interface: CONFIG.INTERFACE
       })
     }
 
@@ -122,6 +150,9 @@
       <option value="WHITE">Play as White</option>
       <option value="BLACK">Play as Black</option>
     </select>
+    <button onclick="downloadAndClearLogs()" style="margin: 10px;">
+      Download and Clear Logs
+    </button>
 </div>
 <div id="extra_apk" style="position: fixed; right: 0; bottom: 0; z-index: 2;">
   <button style="margin: 10px;" onclick="getapk()">get android apk</button>

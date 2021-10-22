@@ -7,7 +7,7 @@ function bind_bestmove(x, y) {
 }
 
 class FlexApp {
-    constructor(staleDom, wrapDom, flexDom, X, Y, fensCsv, config) {
+    constructor(staleDom, wrapDom, flexDom, X, Y, flexGame, config) {
         const defaultConfig = {
             onHumanMoveRegistered: this.onHumanMoveRegistered.bind(this),
             onEngineMoveRegistered: this.onEngineMoveRegistered.bind(this)
@@ -20,7 +20,6 @@ class FlexApp {
         this.staleDom = staleDom
         this.wrapDom = wrapDom
         this.flexBoard = new FlexBoard(flexDom, X, Y, this.config)
-        this.markPlay()
 
         let that = this
 
@@ -32,19 +31,51 @@ class FlexApp {
             that.onUCIMessage(message)
         }, bind_bestmove(X, Y))
 
-        this.history = fensCsv.split(';')
-        this.canResetFlag = history.length === 1
-        this.flexfen = this.history[this.history.length - 1]
-        this.flexBoard.position(this.flexfen)
+        this.flexGame = flexGame
+        let snap = this.flexGame.snaps[this.flexGame.snaps.length - 1]
 
-        this.pliesSinceLastCapture = 0
-        this.repetitionLookup = {}
+        this.setCanResetFlag()
+        this.initSnapshot(snap)
+        this.showSnapshot(snap)
 
-        if (this.config.playAs == GET_SIDE(this.flexfen)) {
-            this.flexTBL.write(this.flexfen)
+        if (snap.board == "PLAY") {
+            if (this.config.playAs == GET_SIDE(snap.flexfen)) {
+                this.flexTBL.write(snap.flexfen)
+            } else {
+                this.flexBoard.showLoader()
+                this.flexUCI.write(snap.flexfen)
+            }
+        }
+    }
+
+    setCanResetFlag() {
+        if (this.config.playAs == "WHITE") {
+            this.canResetFlag = this.flexGame.snaps.length == 1
         } else {
-            this.flexBoard.showLoader()
-            this.flexUCI.write(this.flexfen, 100)
+            this.canResetFlag = this.flexGame.snaps.length <= 2
+        }
+    }
+
+    showMarks(snap) {
+        this.flexBoard.lastLayer.highlight(snap.marks, CONFIG.THEME.LAST)
+    }
+
+    showBoard(snap) {
+        if (snap.board == "PLAY") {
+            this.markPlay()
+        } else if (snap.board == "WIN") {
+            this.markWin()
+        } else if (snap.board == "STALE") {
+            this.markStale()
+        } else {
+            this.markEnd()
+        }
+    }
+
+    showCheck(snap, frame) {
+        this.flexBoard.clearCheck()
+        if (snap.check) {
+            this.flexBoard.markCheck(GET_KING(snap.flexfen), frame)
         }
     }
 
@@ -55,7 +86,7 @@ class FlexApp {
         this.staleDom.style.visibility = "hidden";
     }
 
-    markPat() {
+    markStale() {
         this.canResetFlag = true
         this.flexBoard.hideLoader()
         this.staleDom.style.visibility = "visible";
@@ -71,7 +102,6 @@ class FlexApp {
 
     markPlay() {
         document.body.style.backgroundColor = CONFIG.THEME.TABLE
-        this.flexBoard.unmarkCheck()
         this.staleDom.style.visibility = "hidden";
     }
 
@@ -87,99 +117,136 @@ class FlexApp {
         return this.pliesSinceLastCapture === 50
     }
 
-    repetitionCheck(flexfen) {
+    repetitionCheck(flexfen, plyCount) {
         const fenCore = flexfen.split(' ')[0]
-        if (this.repetitionLookup.hasOwnProperty(fenCore)) {
-            this.repetitionLookup[fenCore] += 1
-            if (this.repetitionLookup[fenCore] === 3) {
+        if (this.flexGame.repetitionLookup.hasOwnProperty(fenCore)) {
+            this.flexGame.repetitionLookup[fenCore].push(plyCount)
+            if (this.flexGame.repetitionLookup[fenCore].length == 3) {
                 return true
             }
         } else {
-            this.repetitionLookup[fenCore] = 1
+            this.flexGame.repetitionLookup[fenCore] = [plyCount]
         }
         return false
     }
 
-    extraTermination(fen) {
+    takeBackRepetitionCheck(flexfen, plyCount) {
+        const fenCore = flexfen.split(' ')[0]
+        if (this.flexGame.repetitionLookup.hasOwnProperty(fenCore)) {
+            if (this.flexGame.repetitionLookup[fenCore].indexOf(plyCount) != -1) {
+                this.flexGame.repetitionLookup[fenCore].pop()
+            }
+        }
+    }
+
+    extraTermination(fen, plyCount) {
         const terminateInsufficientMaterial = this.insufficientMaterial(fen)
         const terminateCapture = this.captureCheck(fen)
-        const terminateRepetition = this.repetitionCheck(fen)
+        const terminateRepetition = this.repetitionCheck(fen, plyCount)
         return terminateInsufficientMaterial || terminateRepetition || terminateCapture
     }
 
+    getBoardMarker(player, flexfen, status, plyCount) {
+        if (this.extraTermination(flexfen, plyCount)) {
+            return "DRAW"
+        } else if (status == "STALEMATE") {
+            return "STALE"
+        } else if ((player == "HUMAN") && (status == "CHECKMATE")) {
+            return "WIN"
+        } else if ((player == "ENGINE") && (status == "CHECKMATE")) {
+            return "END"
+        } else {
+            return "PLAY"
+        }
+    }
+
+    pushSnapshot(player, key0, key1) {
+        const fromfen = this.flexGame.snaps[this.flexGame.snaps.length - 1].flexfen
+        const plyCount = this.flexGame.snaps.length + 1
+
+        const flexfen = FlexEngineJs.getBoardAfter(this.X, this.Y, "AUTO", fromfen + '#' + key0 + key1)
+        const status = FlexEngineJs.getStatus(this.X, this.Y, "AUTO", flexfen)
+        const marks = this.flexBoard.lastLayer.mark
+        const check = (status == "CHECKMATE") || (status == "CHECK")
+        const board = this.getBoardMarker(player, flexfen, status, plyCount)
+
+        const snap = {
+            flexfen: flexfen,
+            marks: marks,
+            status: status,
+            check: check,
+            board: board
+        }
+
+        this.flexGame.snaps.push(snap)
+        this.flexGame.log.push(key0 + key1)
+
+        return snap
+    }
+
+    initSnapshot(snap) {
+        this.flexBoard.position(snap.flexfen)
+        this.flexBoard.dropLayer.clear()
+        this.flexBoard.hintLayer.clear()
+        this.showMarks(snap)
+    }
+
+    showSnapshot(snap) {
+        this.showBoard(snap)
+        this.showCheck(snap, snap.status == "CHECK")
+    }
+
+    storeSnapshot(snap) {
+        ActivityJs.setSnap(JSON.stringify(this.flexGame))
+        if (snap.board != "PLAY") {
+            this.storeLog(snap.board)
+        }
+    }
+
+    storeLog(termString) {
+        const snap = this.flexGame.snaps[this.flexGame.snaps.length - 1]
+        if ((termString == "REROLL") && (snap.board != "PLAY")) {
+            return
+        }
+        const datetime = (new Date()).toLocaleString()
+        const logline = datetime + " :: " + this.flexGame.log.join(" ") + " :: " + termString
+        ActivityJs.appendLog(logline)
+    }
+
     onHumanMoveRegistered(key0, key1) {
-        this.canResetFlag = false
+        this.setCanResetFlag()
 
         this.flexBoard.disableMoves()
         this.flexBoard.dropLayer.clear()
         this.flexBoard.hintLayer.clear()
 
-        this.flexfen = FlexEngineJs.getBoardAfter(this.X, this.Y, "AUTO", this.flexfen + '#' + key0 + key1)
+        const snap = this.pushSnapshot("HUMAN", key0, key1)
+        this.showSnapshot(snap)
+        this.storeSnapshot(snap)
 
-        const status = FlexEngineJs.getStatus(this.X, this.Y, "AUTO", this.flexfen)
-        if (status == "CHECKMATE") {
-            this.markWin()
-            this.flexBoard.markCheck(GET_KING(this.flexfen), false)
-            return
+        if (snap.board == "PLAY") {
+            this.flexBoard.showLoader()
+            this.flexUCI.write(snap.flexfen)
         }
-
-        if (status == "STALEMATE") {
-            this.markPat()
-            return
-        }
-
-        if (this.extraTermination(this.flexfen)) {
-            this.markEnd()
-            return
-        }
-
-        this.markPlay()
-
-        this.flexBoard.showLoader()
-        this.flexUCI.write(this.flexfen, 100)
     }
 
+
     onEngineMoveRegistered(key0, key1) {
-        this.canResetFlag = false
         this.flexBoard.hideLoader()
+        this.setCanResetFlag()
 
-        this.flexfen = FlexEngineJs.getBoardAfter(this.X, this.Y, "AUTO", this.flexfen + '#' + key0 + key1)
+        const snap = this.pushSnapshot("ENGINE", key0, key1)
+        this.showSnapshot(snap)
+        this.storeSnapshot(snap)
 
-        this.history.push(this.flexfen)
-
-        ActivityJs.setHistory(this.X, this.Y, this.history.join(';'))
-
-        const status = FlexEngineJs.getStatus(this.X, this.Y, "AUTO", this.flexfen)
-        if (status == "CHECKMATE") {
-            this.markEnd()
-            this.flexBoard.markCheck(GET_KING(this.flexfen), false)
-            return
+        if (snap.board == "PLAY") {
+            this.flexTBL.write(snap.flexfen)
         }
-
-        if (status == "STALEMATE") {
-            this.markPat()
-            return
-        }
-
-        if (this.extraTermination(this.flexfen)) {
-            this.markEnd()
-            return
-        }
-
-        if (status == "CHECK") {
-            this.flexBoard.markCheck(GET_KING(this.flexfen), true)
-        }
-
-        this.flexTBL.write(this.flexfen)
     }
 
     onTBLMessage(message) {
         let moves = this.flexBoard.parseLine(message)
         this.flexBoard.allowMoves(moves)
-
-        if (Object.keys(moves).length === 0) {
-            this.markEnd()
-        }
     }
 
     onUCIMessage(message) {
@@ -189,34 +256,51 @@ class FlexApp {
             let key1 = m[1].substr(2,4)
             this.flexBoard.makeEngineMove(key0, key1)
         } else if (m[0] === 'CHECKMATE') {
+            // TODO: make sure that branch is obsolete
             this.markWin()
         } else if (m[0] === 'STALEMATE') {
+            // TODO: make sure that branch is obsolete
             this.markPat()
         } else if (m[0] === 'RESIGN') {
+            // TODO: make sure that branch is obsolete
             this.markWin()
         }
     }
 
     canTakeBack() {
         if (this.config.playAs == "WHITE") {
-            return this.history.length > 1
+            return this.flexGame.snaps.length > 1
         } else {
-            return this.history.length > 2
+            return this.flexGame.snaps.length > 2
         }
+    }
+
+    takeBackStep() {
+        const flexfen = this.flexGame.snaps[this.flexGame.snaps.length - 1].flexfen
+        const plyCount = this.flexGame.snaps.length
+        this.takeBackRepetitionCheck(flexfen, plyCount)
+        this.flexGame.snaps.pop()
     }
 
     takeBack() {
         if (!this.canTakeBack()) {
             return
         }
-        this.markPlay()
-        this.history.pop()
-        this.flexfen = this.history[this.history.length - 1]
-        this.flexBoard.position(this.flexfen)
-        this.flexTBL.write(this.flexfen)
+        const snapTerm = this.flexGame.snaps[this.flexGame.snaps.length - 1]
+        if (!((["PLAY", "CHECK"].indexOf(snapTerm.status) == -1) && (this.config.playAs != GET_SIDE(snapTerm.flexfen)))) {
+            this.takeBackStep()
+        }
+        this.takeBackStep()
+        this.flexGame.log.push("takeback")
+
+        const snap = this.flexGame.snaps[this.flexGame.snaps.length - 1]
+        this.storeSnapshot(snap)
+        this.initSnapshot(snap)
+        this.showSnapshot(snap)
+
+        this.flexTBL.write(snap.flexfen)
         if (!this.canTakeBack()) {
             this.canResetFlag = true
         }
-        ActivityJs.setHistory(this.X, this.Y, this.history.join(';'))
     }
 }

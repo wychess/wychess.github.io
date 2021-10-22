@@ -23,6 +23,13 @@ const GUSTAV = {
 
   'LOADER_BACK': "img/gustav/loader-gustav-back.png",
   'LOADER_SPIN': "img/gustav/loader-gustav.gif",
+
+  'BUTTON_REROLL_BACK': "img/gustav/wychess_button_back.svg",
+  'BUTTON_REROLL_HEAD': "img/gustav/wychess_button_reroll.svg",
+
+  'BUTTON_TAKEBACK_BACK': "img/gustav/wychess_button_back.svg",
+  'BUTTON_TAKEBACK_HEAD': "img/gustav/wychess_button_takeback.svg",
+
   'PIECES': "svg/cburnett/",
 
   'STALE': 'stale_gustav'

@@ -23,6 +23,13 @@ const LIGHT = {
 
   'LOADER_BACK': "img/light/loader-light-back.png",
   'LOADER_SPIN': "img/light/loader-light.gif",
+
+  'BUTTON_REROLL_BACK': "img/light/wychess_button_back.svg",
+  'BUTTON_REROLL_HEAD': "img/light/wychess_button_reroll.svg",
+
+  'BUTTON_TAKEBACK_BACK': "img/light/wychess_button_back.svg",
+  'BUTTON_TAKEBACK_HEAD': "img/light/wychess_button_takeback.svg",
+
   'PIECES': "svg/staunty/",
 
   'STALE': 'stale_light'

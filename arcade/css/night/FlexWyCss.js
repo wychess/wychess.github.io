@@ -23,6 +23,13 @@ const NIGHT = {
 
   'LOADER_BACK': "img/night/loader-night-back.png",
   'LOADER_SPIN': "img/night/loader-night.gif",
+
+  'BUTTON_REROLL_BACK': "img/night/wychess_button_back.svg",
+  'BUTTON_REROLL_HEAD': "img/night/wychess_button_reroll.svg",
+
+  'BUTTON_TAKEBACK_BACK': "img/night/wychess_button_back.svg",
+  'BUTTON_TAKEBACK_HEAD': "img/night/wychess_button_takeback.svg",
+
   'PIECES': "svg/staunty/",
 
   'STALE': 'stale_night'

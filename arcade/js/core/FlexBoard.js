@@ -5,6 +5,14 @@ function restyle(dom, width, height, left, top) {
     dom.style.top = top + 'px'
 }
 
+function restyle_inverse(dom, width, height, right, bottom) {
+    dom.style.width = width + 'px'
+    dom.style.height = height + 'px'
+    dom.style.right = right + 'px'
+    dom.style.bottom = bottom + 'px'
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -167,7 +175,7 @@ class MoveLayer {
         this.doCapKey(this.checkKey, ALPHA(CONFIG.THEME.CHECK, 50))
     }
 
-    doUnmarkCheck() {
+    doClearCheck() {
         this.checkKey = null
         this.clear()
     }
@@ -744,6 +752,14 @@ class MenuLayer {
             this.infoDom.addEventListener('click', this.flexBoard.config.infoCallback)
             this.layerDom.appendChild(this.infoDom)
         }
+        if (this.flexBoard.config.downCallback != null) {
+            this.downDom = img({src: 'img/wychess_download.svg'})
+            this.downDom.className = "extra_button"
+            this.downDom.style.position = 'absolute'
+            this.downDom.style.zIndex = zIndex + 1
+            this.downDom.addEventListener('click', this.flexBoard.config.downCallback)
+            this.layerDom.appendChild(this.downDom)
+        }
         let that = this
         FOR_EACH_KEY(this.MAX_X, this.MAX_Y, function (xz, yz, key) {
             let squareWrap = div()
@@ -799,6 +815,14 @@ class MenuLayer {
             this.infoDom.style.bottom = infoMargin + "px"
             this.infoDom.style.width = infoSize + 'px'
             this.infoDom.style.height = infoSize + 'px'
+        }
+        if (this.flexBoard.config.downCallback != null) {
+            const downSize = squareSize / 2
+            const downMargin = squareSize / 4
+            this.downDom.style.left = (2 * squareSize + downMargin) + "px"
+            this.downDom.style.bottom = downMargin + "px"
+            this.downDom.style.width = downSize + 'px'
+            this.downDom.style.height = downSize + 'px'
         }
         this.reframe()
     }
@@ -966,7 +990,16 @@ class FlexBoard {
           onHumanMoveRegistered: this.defaultOnHumanMoveRegistered.bind(this),
           onEngineMoveRegistered: this.defaultOnEngineMoveRegistered.bind(this),
           marginPercent: 7,
-          playAs: "WHITE"
+          playAs: "WHITE",
+          interface: "GESTURES",
+          reroll_button_click: null,
+          reroll_button_touchstart: null,
+          reroll_button_touchend: null,
+          reroll_button_touchcancel: null,
+          takeback_button_click: null,
+          takeback_button_touchstart: null,
+          takeback_button_touchend: null,
+          takeback_button_touchcancel: null,
         }
         this.config = {...defaultConfig, ...config}
 
@@ -987,7 +1020,9 @@ class FlexBoard {
         this.outerDom.appendChild(this.innerDom)
         this.innerDom.appendChild(this.boardDom)
         this.loaderDom = this.createLoaderDom()
+        this.buttonDom = this.createButtonDom()
         this.outerDom.appendChild(this.loaderDom)
+        this.outerDom.appendChild(this.buttonDom)
         this.notifyDom = this.createNotifyDom()
         this.outerDom.appendChild(this.notifyDom)
 
@@ -1012,6 +1047,14 @@ class FlexBoard {
             this.menuLayer = new MenuLayer(this, this.innerDom, config.defaultX, config.defaultY, config.minX, config.minY, this.X, this.Y, 500, config.changeResolution, config.startActivityIntent, config.touchMenu)
             this.innerDom.appendChild(this.menuLayer.layerDom)
             this.innerDom.appendChild(this.menuLayer.frameDom)
+        }
+
+        if (this.config.interface == "GESTURES") {
+            this.buttonDom.style.visibility = 'hidden'
+            this.buttonDom.style.zIndex = -1
+        } else {
+            this.buttonDom.style.visibility = 'visible'
+            this.buttonDom.style.zIndex = 2
         }
 
         window.addEventListener('resize', this.onResize.bind(this))
@@ -1082,9 +1125,9 @@ class FlexBoard {
         return boardDom
     }
 
-    unmarkCheck() {
+    clearCheck() {
         this.boardDom.style.border = '3px solid ' + CONFIG.THEME.FRAME
-        this.moveLayer.doUnmarkCheck()
+        this.moveLayer.doClearCheck()
     }
 
     markCheck(key, markFrame) {
@@ -1099,6 +1142,47 @@ class FlexBoard {
           img({src: CONFIG.THEME.LOADER_BACK, style: "position: absolute; width: 100%; height: 100%;"}),
           img({src: CONFIG.THEME.LOADER_SPIN, style: "position: absolute; width: 66%; height: 66%; left: 17%; top: 17%;"}),
         )
+    }
+
+    createButtonDom() {
+        let buttonDom = $$(div({style: 'position: absolute; visibility: hidden; z-index: 1000;'}),
+            this.reroll_button = $$(div({style: 'position: absolute;'}),
+                img({src: CONFIG.THEME.BUTTON_REROLL_BACK, style: "position: absolute; width: 100%; height: 100%;"}),
+                img({src: CONFIG.THEME.BUTTON_REROLL_HEAD, style: "position: absolute; width: 60%; height: 60%; left: 20%; top: 20%;"})
+            ),
+            this.takeback_button = $$(div({style: 'position: absolute;'}),
+                img({src: CONFIG.THEME.BUTTON_TAKEBACK_BACK, style: "position: absolute; width: 100%; height: 100%;"}),
+                img({src: CONFIG.THEME.BUTTON_TAKEBACK_HEAD, style: "position: absolute; width: 60%; height: 60%; left: 20%; top: 20%;"}),
+            )
+        )
+
+        if (this.config.reroll_button_click != null) {
+            this.reroll_button.addEventListener('click', this.config.reroll_button_click)
+        }
+        if (this.config.reroll_button_touchstart != null) {
+            this.reroll_button.addEventListener('touchstart', this.config.reroll_button_touchstart)
+        }
+        if (this.config.reroll_button_touchend != null) {
+            this.reroll_button.addEventListener('touchend', this.config.reroll_button_touchend)
+        }
+        if (this.config.reroll_button_touchcancel != null) {
+            this.reroll_button.addEventListener('touchcancel', this.config.reroll_button_touchcancel)
+        }
+
+        if (this.config.takeback_button_click != null) {
+            this.takeback_button.addEventListener('click', this.config.takeback_button_click)
+        }
+        if (this.config.takeback_button_touchstart != null) {
+            this.takeback_button.addEventListener('touchstart', this.config.takeback_button_touchstart)
+        }
+        if (this.config.takeback_button_touchend != null) {
+            this.takeback_button.addEventListener('touchend', this.config.takeback_button_touchend)
+        }
+        if (this.config.takeback_button_touchcancel != null) {
+            this.takeback_button.addEventListener('touchcancel', this.config.takeback_button_touchcancel)
+        }
+
+        return buttonDom
     }
 
     createNotifyDom() {
@@ -1171,6 +1255,7 @@ class FlexBoard {
         const boardRatio = this.Y / this.X
 
         const MAX_LOADER_SIZE = 200
+        const MAX_BUTTON_SIZE = 200
 
         if (outerRatio > boardRatio) {
             this.squareSize = Math.floor(innerWidth / this.X)
@@ -1185,6 +1270,11 @@ class FlexBoard {
             this.loaderSize = Math.min(Math.min(MAX_LOADER_SIZE, this.loaderSpace / 2), this.loaderSpace * 0.8)
             this.loaderLeft = (outerWidth - this.loaderSize) / 2
             this.loaderTop = (outerMarginTop + this.topMargin - this.loaderSize) / 2
+
+            this.buttonSpace = outerMarginTop + this.topMargin
+            this.buttonSize = Math.min(Math.min(Math.min(MAX_BUTTON_SIZE, this.buttonSpace / 2), this.buttonSpace * 0.5), outerWidth * 0.15)
+            this.buttonLeft = (outerWidth - 2.5 * this.buttonSize) / 2
+            this.buttonBottom = (outerMarginTop + this.topMargin - this.buttonSize) / 2
         } else {
             this.squareSize = Math.floor(innerHeight / this.Y)
 
@@ -1198,6 +1288,11 @@ class FlexBoard {
             this.loaderSize = Math.min(Math.min(MAX_LOADER_SIZE, this.loaderSpace / 2), this.loaderSpace * 0.8)
             this.loaderLeft = (outerMarginLeft + this.leftMargin - this.loaderSize) / 2
             this.loaderTop = (outerHeight - this.loaderSize) / 2
+
+            this.buttonSpace = outerMarginLeft + this.leftMargin
+            this.buttonSize = Math.min(Math.min(Math.min(MAX_BUTTON_SIZE, this.buttonSpace / 2), this.buttonSpace * 0.5), outerHeight * 0.15)
+            this.buttonRight = (outerMarginLeft + this.leftMargin - this.buttonSize) / 2
+            this.buttonBottom = (outerHeight - 2.5 * this.buttonSize) / 2
         }
 
         this.boardDom.style.width = 2 * frame + this.boardWidth + 'px'
@@ -1232,6 +1327,13 @@ class FlexBoard {
         }
 
         restyle(this.loaderDom, this.loaderSize, this.loaderSize, this.loaderLeft, this.loaderTop)
+        if (outerRatio > boardRatio) {
+            restyle_inverse(this.buttonDom, 2.5*this.buttonSize, this.buttonSize, this.buttonLeft, this.buttonBottom)
+        } else {
+            restyle_inverse(this.buttonDom, this.buttonSize, 2.5*this.buttonSize, this.buttonRight, this.buttonBottom)
+        }
+        restyle(this.reroll_button, this.buttonSize, this.buttonSize, 0, 0)
+        restyle_inverse(this.takeback_button, this.buttonSize, this.buttonSize, 0, 0)
 
         const notifySize = this.loaderSize / 2
         const notifyTop = this.loaderTop + notifySize / 2

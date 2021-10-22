@@ -31,6 +31,7 @@
       'MAX_XY': parseInt(window.localStorage.getItem('MAX_XY')) || 8,
       'THEME': ((window.THEME_NAME == 'LIGHT') ? LIGHT : (window.THEME_NAME == 'NIGHT') ? NIGHT : GUSTAV),
       'LABEL': window.localStorage.getItem('LABEL') || 'NO_COORDS',
+      'INTERFACE': 'BUTTONS',
       'SETUP': window.localStorage.getItem('SETUP') || 'ARCADE_KING_ON_CENTER_EASY',
       'PLAY_AS': window.localStorage.getItem('PLAY_AS') || 'WHITE'
     }
@@ -44,14 +45,30 @@
   <script src="js/core/FlexHelp.js"></script>
 
   <script src="js/app/arcade/FlexApp.js"></script>
+  <script src="js/app/arcade/FlexGame.js"></script>
 
   <script>
     const wychess_host = 'https://wychess.github.io'
     const flex_host = wychess_host + '/arcade'
 
+    function getConfigLabel() {
+      return window.CONFIG.X + 'x' + window.CONFIG.Y + '-' + window.CONFIG.SETUP + '-' + window.CONFIG.PLAY_AS
+    }
+
     const ActivityJs = {
-      setHistory: function(x, y, history) {
-        window.localStorage.setItem(x + 'x' + y, history)
+      setSnap: function(flexgame) {
+        window.localStorage.setItem(getConfigLabel(), flexgame)
+      },
+
+      getSnap: function() {
+        return window.localStorage.getItem(getConfigLabel(), "") || ""
+      },
+
+      appendLog: function(logline) {
+        let logs = window.localStorage.getItem("logs", "") || ""
+        if (logs != "") logs += "\n"
+        logs += logline
+        window.localStorage.setItem("logs", logs)
       }
     }
 
@@ -77,24 +94,48 @@
                         (CONFIG.SETUP.indexOf("HARD") !== -1) ? 3 : 5
         let oppPoints = 3
         if (CONFIG.PLAY_AS == "WHITE") {
-          CONFIG.SETUP = "ARCADE_KING_ON_CENTER_" + youPoints + ":" + oppPoints
+          CONFIG.SETUP_EXT = "ARCADE_KING_ON_CENTER_" + youPoints + ":" + oppPoints
         } else {
-          CONFIG.SETUP = "ARCADE_KING_ON_CENTER_" + oppPoints + ":" + youPoints
+          CONFIG.SETUP_EXT = "ARCADE_KING_ON_CENTER_" + oppPoints + ":" + youPoints
         }
+      } else {
+        window.CONFIG.SETUP_EXT = window.CONFIG.SETUP
       }
 
-      return FlexEngineJs.getBoard(X, Y, "", CONFIG.SETUP)
+      return FlexEngineJs.getBoard(X, Y, "", CONFIG.SETUP_EXT)
     }
 
-    function resetBoard(X, Y, history) {
+    function getFlexGame(forceReroll) {
+      const flexGameString = forceReroll ? "" : ActivityJs.getSnap()
+      if (flexGameString != "") {
+        return JSON.parse(flexGameString)
+      } else {
+        const flexGame = genFlexGame(getBoard(CONFIG.X, CONFIG.Y))
+        ActivityJs.setSnap(JSON.stringify(flexGame))
+        return flexGame
+      }
+    }
+
+    function resetBoard(X, Y, reroll) {
       let staleDom = document.getElementById(CONFIG.THEME.STALE)
       let wrapDom = document.getElementById("wrap")
       let flexDom = document.getElementById("flex")
       flexDom.innerHTML = ''
 
-      flexApp = new FlexApp(staleDom, wrapDom, flexDom, X, Y, history, {
+      if (reroll) {
+        if (flexApp != null) {
+          flexApp.storeLog("REROLL")
+        }
+      }
+
+      let flexGame = getFlexGame(reroll)
+
+      flexApp = new FlexApp(staleDom, wrapDom, flexDom, X, Y, flexGame, {
         marginPercent: 15,
-        playAs: CONFIG.PLAY_AS
+        playAs: CONFIG.PLAY_AS,
+        interface: CONFIG.INTERFACE,
+        reroll_button_click: function() { resetBoard(X, Y, true) },
+        takeback_button_click: function() { flexApp.takeBack() }
       })
 
       flexGest = new FlexGest(wrapDom, flexApp.flexBoard.chessLayer.layerDom, {
@@ -119,16 +160,12 @@
         },
 
         slideReject: function() {
-          const history = getBoard(X, Y)
-          window.localStorage.setItem(X + 'x' + Y, history)
-          resetBoard(X, Y, history)
+          resetBoard(X, Y, true)
         },
 
         doubleTap: function() {
           if (flexApp.canResetFlag) {
-            const history = getBoard(X, Y)
-            window.localStorage.setItem(X + 'x' + Y, history)
-            resetBoard(X, Y, history)
+            resetBoard(X, Y, true)
           }
         }
       })
@@ -137,18 +174,9 @@
     function doBootstrap(X, Y) {
       OnFlexEngineJsLoaded(function() {
         document.title = 'wychess arcade ' + X + 'x' + Y
-        const history = window.localStorage.getItem(X + 'x' + Y) || getBoard(X, Y)
-        resetBoard(X, Y, history)
+        resetBoard(X, Y, false)
         addExtraAction('change setup', function() {
           document.location = flex_host + '/index.html'
-        })
-        addExtraAction('reroll board', function() {
-          const history = getBoard(X, Y)
-          window.localStorage.setItem(X + 'x' + Y, history)
-          resetBoard(X, Y, history)
-        })
-        addExtraAction('take back', function() {
-          flexApp.takeBack()
         })
       })
     }
@@ -156,6 +184,8 @@
     function bootstrap() {
       const X = Math.max(3, Math.min(CONFIG.MAX_XY, getIntFromUrl(6, 2))) // 2: "X=_&Y=8"
       const Y = Math.max(3, Math.min(CONFIG.MAX_XY, getIntFromUrl(6, 6))) // 6: "X=8&Y=_"
+      window.CONFIG.X = X
+      window.CONFIG.Y = Y
       doBootstrap(X, Y)
     }
   </script>
