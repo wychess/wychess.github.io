@@ -175,7 +175,7 @@
       OnFlexEngineJsLoaded(function() {
         document.title = 'wychess arcade ' + X + 'x' + Y
         resetBoard(X, Y, false)
-        addExtraAction('change setup', function() {
+        addExtraAction('Change Setup', function() {
           document.location = flex_host + '/index.html'
         })
       })
@@ -199,7 +199,7 @@
   <div id="flex" style="position: absolute; width: 100%; height: 100%;"></div>
   <div id="extra" style="position: fixed; left: 0; bottom: 0; z-index: 2;"></div>
   <div id="extra_apk" style="position: fixed; right: 0; bottom: 0; z-index: 2;">
-    <button style="margin: 10px;" onclick="getapk()">get android apk</button>
+    <button style="margin: 10px;" onclick="getapk()">Get Android App</button>
   </div>
 </body>
 </html>
