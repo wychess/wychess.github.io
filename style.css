@@ -1,0 +1,134 @@
+/*
+@font-face {
+  font-family: 'IcebergRegular';
+  src: url('fonts/iceberg_regular.ttf')  format('truetype');
+}
+*/
+
+body {
+  color: white;
+  background-color: #202020;
+/*  font-family: IcebergRegular;*/
+  width: 100%;
+  height: 100%;
+}
+
+a {
+  color: #f1bd5c;
+}
+
+video {
+  border-radius: 16px;
+}
+
+.icon {
+  width: 128px;
+  height: 128px;
+  border-radius: 16px;
+}
+
+.playwrap {
+  background-color: white;
+  width: 80%;
+  margin: 10%;
+  border-radius: 16px;
+}
+
+.playicon {
+  width: 90%;
+  margin: 5%;
+  border-radius: 16px;
+}
+
+#sitewrap {
+  position: absolute;
+  width: 1600px;
+  height: 700px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-800px, -350px);
+}
+
+.part {
+  margin: 20px;
+  border-radius: 16px;
+}
+
+#part1 {
+  position: absolute;
+  background-color: black;
+  left: 0%;
+  bottom: 0;
+  top: 0;
+  right: 80%;
+  border-radius: 16px;
+}
+
+#iconwrap {
+  position: absolute;
+  width: 192px;
+  height: 192px;
+  text-align: center;
+  font-size: 2em;
+  left: 50%;
+  top: 35%;
+  transform: translate(-96px, -96px);
+}
+
+#linkwrap {
+  color: #f1bd5c;
+  position: absolute;
+  width: 100%;
+  bottom: 40px;
+  text-align: center;
+}
+
+#part2 {
+  position: absolute;
+  left: 20%;
+  bottom: 0;
+  top: 0;
+  right: 60%;
+  background-color: black;
+  padding-top: 60px;
+  border-radius: 16px;
+}
+
+#part3 {
+  position: absolute;
+  left: 40%;
+  bottom: 0;
+  top: 0;
+  right: 40%;
+  background-color: black;
+}
+
+#part4 {
+  position: absolute;
+  left: 60%;
+  bottom: 0;
+  top: 0;
+  right: 20%;
+  background-color: black;
+}
+
+#part5 {
+  position: absolute;
+  left: 80%;
+  bottom: 0;
+  top: 0;
+  right: 0%;
+  background-color: black;
+}
+
+.mini-slideshow {width:360px; height:640px; overflow:hidden; position:relative; }
+.mini-slideshow img{ position:absolute; animation:mini-slideshow 30s infinite; opacity:0; width: 100%; height: auto;}
+
+@keyframes mini-slideshow {10%{opacity:1;} 50%{opacity:0;}}
+.mini-slideshow img:nth-child(1){animation-delay:0s;}
+.mini-slideshow img:nth-child(2){animation-delay:5s;}
+.mini-slideshow img:nth-child(3){animation-delay:10s;}
+.mini-slideshow img:nth-child(4){animation-delay:15s;}
+.mini-slideshow img:nth-child(5){animation-delay:20s;}
+.mini-slideshow img:nth-child(6){animation-delay:25s;}
+

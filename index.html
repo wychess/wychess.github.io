@@ -1,9 +1,89 @@
-<!doctype html>
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta charset="utf-8">
-  <title>wychess</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <!--
+                                              _/                                                                          
+     _/      _/      _/  _/    _/    _/_/_/  _/_/_/      _/_/      _/_/_/    _/_/_/        _/_/_/    _/_/    _/_/_/  _/_/ 
+    _/      _/      _/  _/    _/  _/        _/    _/  _/_/_/_/  _/_/      _/_/          _/        _/    _/  _/    _/    _/
+     _/  _/  _/  _/    _/    _/  _/        _/    _/  _/            _/_/      _/_/      _/        _/    _/  _/    _/    _/ 
+      _/      _/        _/_/_/    _/_/_/  _/    _/    _/_/_/  _/_/_/    _/_/_/    _/    _/_/_/    _/_/    _/    _/    _/  
+                           _/                                                                                             
+                      _/_/                                                                                                
+    -->
+
+    <title>DeepTris</title>
+
+    <meta name="description" content="Chess Apps" />
+    <meta name="keywords" content="chess arcade puzzle opener openings" />
+    <meta name="author" content="wychess.com <wychess@wychess.com>" />
+
+    <link rel="icon" href="images/wychess_king_square.png" />
+    <link rel="stylesheet" href="style.css" type="text/css">
+    </script>
 </head>
-<body onload="document.location = 'http://ipa-reader.xyz/?text=v%C9%A8%CA%A7%C9%9Bs&voice=Ewa';">
+
+<body>
+  <div id="sitewrap">
+    <div class="part" id="part1">
+      <div id="iconwrap">
+        <img class="icon" src="images/wychess_king_square.png" />
+        <br/>
+        wychess
+      </div>
+
+      <div id="linkwrap">
+        wychess
+        <br/><br/>
+        <span>/vɨʧɛs/</span>
+        <br/><br/>
+<audio autoplay="true" controls>
+<source src="data:audio/mpeg;base64,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eMp4dWXbSSRu//NixIUfXBbPHGGGWEA8swtPTMZiUVZojYPzpDj9lqYa3RF1O+wiOnTQzjMBZ7sHBDmZiPOtVLCPuIOqT8XiQWvoqboSXR1fX5f2NnFYwx6jbXVS76HqWmmt6K9NKdXZqAiuvpRJ3aZL1DPOQrGO3/C08EuMlXvCfsiwcCePNWhlZrZZI2oFARoMAcTNQFmVEY6kZBltH9w6XIult//zYsSXHjtu1vxgxRpPEZEWtNBZyEtkmumt0FtWJ4XjxX6xtJIK9FZjhyvnKjOQ7VR+vXzq4zVnO8zL/+3e1qnX8isruXJv8rHuR1NlUiwxEcWxx8zq1shTo6oodzJ2NksM1F9hXHzISoZvZt9KrcmI6ZaPtXACwNhEwOFVl1C2pxVikosOIJHoowhcbiFyXOv80yfNgZBMktpRsy//82DErh+bls76SYTXFeLffEL1BW/cduhU7M0isxKt/L7ZzoOZ0VmblKslFf/MpXZlutrGsrXfudH9ClsU3lLcLKzM5CCgIC5PDMTUanTz//h+P+xiKN5xtk0Krdp5h2m4Zm9uMA0MwctNSaSqLIyVIkNnXfGzho6pukWh8eKvKRprlQXB5RhdUZhZdf991pRr75mZmGUm0yW5iCD/82LEvh/DVsccSYS93/+h+juZHREvKrJ16vpqima5W7mKhn9St+kupV6ipnKGAVMrAhRXfNBinPi4g2Uv/z7fS4Kec0v978Ky1XtfvIjbnNpszlKjslXF2Ww+eIYZvVXRAJnladWsqTTW391IonYdUzR1dq2Zr1VUk/6oGAgES1VKVv/+aAugYCOFKXQCeY1PUtW0NVqmMrXlCmM///NixM8eyxa3HEmE9UWoCAt6XUrZQF0OFLQxihQEBAQV3jQQ6MN+KhO/wr/i/l8UFFSdFQhv/40lJAWfH+OSl6WlcSElyUv4xIQRJSImpEiRIkQJEv0hJYxLACYCxsUoSFmvH7zKVpSlb/MHnDrGKVqgKBSt///qJhKTHVVaVRwFQFer/DirHUv/4BUSGZYfqgFagpS+q1El/xYKqv/zYsTjH4MKilBJhLm5BiPZtS+GFE7Bj2b+7Ex///qqqqsf1VIM7/lFgoKCqhJhylQb5+ItEHeiEgp2AmgmikRNKPi2cq7zUSREUJAhQGYeYWUeZGv9z+ZZ/6kot2dv/m08blOz////7Us9ScJFCgMo8wsoDEFHxebNSac7ScaBAZZh8Ozxe5/5o0o4sy4dnjN/7OzyztJxpQGJKLP/82DE9SELzkAUSUdpLYsosso+Lzf//s07Xuf/96p2fuzscWzs7OUU7Ozs8RubNSUWaUWznGgQGWYeBqq1TEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/82LE/yfb/UAAeYx1VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg"></source>
+     </audio>
+     </div>
+    </div>
+
+
+    <div class="part" id="part2">
+      <div id="iconwrap">
+        <img class="icon" src="images/wychess_arcade_square.png" /><br/>arcade
+      </div>
+
+      <div id="linkwrap">
+        <a href="https://wychess.github.io/arcade">Play Online</a><br/><br/>
+        <a href="https://drive.google.com/file/d/14ostX_ru3ZIsyQGnWfx1xjLIA-hS-m6e/view?usp=sharing" alt="sha1sum d3b2358fb73304d84d6db548438af0cdf621c112">Get Android APK</a><br/><br/>
+      </div>
+    </div>
+
+    <div class="part" id="part3">
+      <div id="iconwrap">
+        <img class="icon" src="images/wychess_puzzle_square.png" /><br/>puzzle
+      </div>
+
+      <div id="linkwrap">
+        <a href="https://drive.google.com/file/d/1dGYfo0SQAxxUkLPhEZEgdoxi0zPqwjcL/view?usp=sharing" alt="sha1sum 90c4a82e78043ce174930fe1ebf3ae8303f34386">Get Android APK</a><br/><br/>
+      </div>
+    </div>
+
+    <div class="part" id="part4">
+      <div id="iconwrap">
+        <img class="icon" src="images/wychess_opener_square.png" /><br/>opener
+      </div>
+
+      <div id="linkwrap">
+        <a href="https://drive.google.com/file/d/1ZSTUlOi2cmjEXDIvZ7kF_5qpLDAPJUU8/view?usp=sharing" alt="sha1sum c3b3bc33630224d3714402e084ab9b694b76d45a">Get Android APK</a><br/><br/>
+      </div>
+    </div>
+
+    <div class="part" id="part5">
+      <div id="iconwrap">
+        <img class="icon" src="images/wychess_reality_square.png" /><br/>reality
+      </div>
+      <div id="linkwrap">
+        <a href="https://play.google.com/store/apps/details?id=com.wychess.reality.demo">Get on Google Play Store</a><br/><br/>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
