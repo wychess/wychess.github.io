@@ -760,6 +760,14 @@ class MenuLayer {
             this.downDom.addEventListener('click', this.flexBoard.config.downCallback)
             this.layerDom.appendChild(this.downDom)
         }
+        if (this.flexBoard.config.clearCallback != null) {
+            this.clearDom = img({src: 'img/wychess_trash.svg'})
+            this.clearDom.className = "extra_button"
+            this.clearDom.style.position = 'absolute'
+            this.clearDom.style.zIndex = zIndex + 1
+            this.clearDom.addEventListener('click', this.flexBoard.config.clearCallback)
+            this.layerDom.appendChild(this.clearDom)
+        }
         let that = this
         FOR_EACH_KEY(this.MAX_X, this.MAX_Y, function (xz, yz, key) {
             let squareWrap = div()
@@ -823,6 +831,14 @@ class MenuLayer {
             this.downDom.style.bottom = downMargin + "px"
             this.downDom.style.width = downSize + 'px'
             this.downDom.style.height = downSize + 'px'
+        }
+        if (this.flexBoard.config.clearCallback != null) {
+            const clearSize = squareSize / 2
+            const clearMargin = squareSize / 4
+            this.clearDom.style.left = (3 * squareSize + clearMargin) + "px"
+            this.clearDom.style.bottom = clearMargin + "px"
+            this.clearDom.style.width = clearSize + 'px'
+            this.clearDom.style.height = clearSize + 'px'
         }
         this.reframe()
     }
@@ -1133,7 +1149,7 @@ class FlexBoard {
     markCheck(key, markFrame) {
         this.moveLayer.doMarkCheck(key)
         if (markFrame) {
-            this.boardDom.style.border = '3px solid ' + ALPHA(CONFIG.THEME.CHECK, 50) //CONFIG.THEME.CHECK
+            this.boardDom.style.border = '3px solid ' + ALPHA(CONFIG.THEME.CHECK, CONFIG.THEME.CHECK_ALPHA)
         }
     }
 

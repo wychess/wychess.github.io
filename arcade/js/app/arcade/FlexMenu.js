@@ -15,7 +15,8 @@ class FlexMenu {
             'marginPercent': 7,
             'cogCallback': null,
             'infoCallback': null,
-            'downCallback': null
+            'downCallback': null,
+            'clearCallback': null
         }
         this.config = {...defaultConfig, ...config}
 

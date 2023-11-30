@@ -8,6 +8,7 @@ const LIGHT = {
   get ECHEC() { return this.FRAME },
   get COORDS() { return this.FRAME },
   'CHECK': "#b63725",
+  'CHECK_ALPHA': 50,
 
   get LAST() { return ALPHA(this.ACCENT, 50, this) },
   get ACCENT_75() { return ALPHA(this.ACCENT, 75) },
